@@ -19,6 +19,7 @@ SE_Lab/
 │       ├── student/            # 学生功能页面
 │       └── common/             # 通用页面
 │           ├── change_password.html # 修改密码
+│           ├── edit_profile.html # 修改个人信息
 │           └── profile.html    # 个人信息
 ├── requirements.txt            # 项目依赖
 ├── config.py                   # 配置文件
