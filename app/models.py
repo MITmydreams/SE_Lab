@@ -6,10 +6,10 @@ from datetime import datetime
 
 class User(db.Model):
     id = db.Column('User_ID', db.String(20), primary_key=True)
-    key = db.Column('key', db.String(20))
+    key = db.Column('key', db.String(255))  # 增加字段长度存储完整哈希值
     name = db.Column('name', db.String(10))
-    mail = db.Column('mail', db.String(20))
-    tele_num = db.Column('tele_num', db.Integer)
+    mail = db.Column('mail', db.String(50))
+    tele_num = db.Column('tele_num', db.String(11))
     user_type = db.Column('user_type', db.Integer)
 
     teacher_courses = db.relationship('Course', back_populates='teacher', cascade='all, delete-orphan')
@@ -24,13 +24,13 @@ class User(db.Model):
     @validates('tele_num')
     def validate_tele_num(self, key, tele_num):
         if tele_num is not None:
-            if len(str(tele_num)) != 11:
-                raise ValueError("Telephone number must be 11 digits")
+            if len(tele_num) != 11:
+                raise ValueError("电话号码必须是11位数字")
         return tele_num
     @validates('user_type')
     def validate_user_type(self, key, user_type):
         if user_type not in (1, 2, 3):
-            raise ValueError("User type must be 1, 2, or 3")
+            raise ValueError("用户类型必须是 1, 2, or 3")
         return user_type
 
     # 检查用户角色
@@ -78,11 +78,11 @@ class Emoji(db.Model):
     @validates('type')
     def validate_type(self, key, type_val):
         if type_val < 1:
-            raise ValueError("Emoji type must be a positive integer")
+            raise ValueError("Emoji类型必须是正整数")
         return type_val
     
     @validates('time')
     def validate_time(self, key, time_val):
         if time_val and time_val > datetime.now():
-            raise ValueError("Emoji time cannot be in the future")
+            raise ValueError("Emoji时间不能是未来的时间")
         return time_val
