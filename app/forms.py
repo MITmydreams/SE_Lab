@@ -12,9 +12,9 @@ class UserRegistrationForm(FlaskForm):
         Length(min=1, max=20, message='用户ID长度必须在1-20个字符之间')
     ])
     
-    key = StringField('密码', validators=[
+    key = PasswordField('密码', validators=[
         DataRequired(message='密码不能为空'),
-        Length(min=1, max=20, message='密码长度必须在1-20个字符之间')
+        Length(min=6, max=255, message='密码长度必须在6-255个字符之间')
     ])
     
     name = StringField('姓名', validators=[
@@ -25,7 +25,7 @@ class UserRegistrationForm(FlaskForm):
     mail = StringField('邮箱', validators=[
         DataRequired(message='邮箱不能为空'),
         Email(message='请输入有效的邮箱地址'),
-        Length(min=1, max=20, message='邮箱长度必须在1-20个字符之间')
+        Length(min=1, max=50, message='邮箱长度必须在1-50个字符之间')
     ])
     
     tele_num = StringField('电话号码', validators=[
@@ -37,7 +37,8 @@ class UserRegistrationForm(FlaskForm):
         (1, '管理员'),
         (2, '教师'),
         (3, '学生')
-    ], validators=[
+    ], coerce=int, # 确保选择的值被转换为整数
+    validators=[
         DataRequired(message='请选择用户类型')
     ])
     
@@ -48,7 +49,7 @@ class UserRegistrationForm(FlaskForm):
             raise ValidationError('电话号码必须是11位数字')
     
     def validate_user_type(self, field):
-        if field.data not in ['1', '2', '3']:
+        if field.data not in [1,2,3]:
             raise ValidationError('用户类型必须是1(管理员)、2(教师)或3(学生)')
 
 #登录表单
@@ -57,10 +58,34 @@ class UserLoginForm(FlaskForm):
         DataRequired(message='用户ID不能为空')
     ])
     
-    key = StringField('密码', validators=[
+    key = PasswordField('密码', validators=[
         DataRequired(message='密码不能为空')
     ])
 
+# 个人信息编辑表单(只允许修改姓名、邮箱和电话号码)
+class UserProfileEditForm(FlaskForm):
+    name = StringField('姓名', validators=[
+        DataRequired(message='姓名不能为空'),
+        Length(min=1, max=10, message='姓名长度必须在1-10个字符之间')
+    ])
+    
+    mail = StringField('邮箱', validators=[
+        DataRequired(message='邮箱不能为空'),
+        Email(message='请输入有效的邮箱地址'),
+        Length(min=1, max=50, message='邮箱长度必须在1-50个字符之间')
+    ])
+    
+    tele_num = StringField('电话号码', validators=[
+        DataRequired(message='电话号码不能为空'),
+        Length(min=11, max=11, message='电话号码必须是11位数字')
+    ])
+    
+    def validate_tele_num(self, field):
+        if not field.data.isdigit():
+            raise ValidationError('电话号码必须全部由数字组成')
+        if len(field.data) != 11:
+            raise ValidationError('电话号码必须是11位数字')
+        
 # 课程表单
 class CourseForm(FlaskForm):
     course_id = StringField('课程ID', validators=[
