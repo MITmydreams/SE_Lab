@@ -195,8 +195,8 @@ def change_password():
             flash('新密码不能为空', 'danger')
             return render_template('common/change_password.html')
         
-        if len(new_password) > 20:
-            flash('新密码长度不能超过20个字符', 'danger')
+        if len(new_password) > 255:
+            flash('新密码长度不能超过255个字符', 'danger')
             return render_template('common/change_password.html')
         
         # 验证新密码和确认密码是否一致
@@ -222,3 +222,440 @@ def change_password():
     
     # GET请求显示修改密码表单
     return render_template('common/change_password.html')
+
+# 管理员查询教师
+@app.route('/admin/teacher', methods=['GET'])
+def teacher():
+    # 获取搜索参数
+    search_query = request.args.get('search', '').strip()
+    
+    # 基础查询
+    query = User.query.filter_by(user_type=2)
+    
+    # 如果有搜索条件
+    if search_query:
+        query = query.filter(
+            db.or_(
+                User.id.ilike(f'%{search_query}%'),
+                User.name.ilike(f'%{search_query}%')
+            )
+        )
+
+    teachers = query.all()
+    form = UserRegistrationForm()
+    return render_template('admin/teacher.html', teachers=teachers, form=form)
+
+# Edit Teacher
+@app.route('/admin/edit_teacher/<string:teacher_id>', methods=['GET', 'POST'])
+def edit_teacher(teacher_id):
+    teacher = User.query.get_or_404(teacher_id)
+    form = UserRegistrationForm(obj=teacher)
+    if form.validate_on_submit():
+        try:
+            teacher.name = form.name.data
+            teacher.mail = form.mail.data
+            teacher.tele_num = form.tele_num.data
+            db.session.commit()
+            flash('成功更新教师！')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'更新教师失败: {e}', 'danger')
+        return redirect(url_for('edit_teacher', teacher_id=teacher.id))
+    return render_template('admin/edit_teacher.html', form=form, teacher=teacher)
+
+# Add Teacher
+@app.route('/admin/add_teacher', methods=['GET', 'POST'])
+def add_teacher():
+    form = UserRegistrationForm()
+    if form.validate_on_submit():
+        try:
+            teacher = User(
+                id=form.id.data,
+                name=form.name.data,
+                mail=form.mail.data,
+                tele_num=form.tele_num.data,
+                key=generate_password_hash(form.key.data),  # 使用哈希存储密码
+                user_type=2  # 教师类型
+            )
+            db.session.add(teacher)
+            db.session.commit()
+            flash('成功添加教师！')
+            return redirect(url_for('teacher'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'添加教师失败: {e}', 'danger')
+    return render_template('admin/add_teacher.html', form=form)
+
+# Delete Teacher
+@app.route('/admin/delete_teacher/<string:teacher_id>', methods=['POST'])
+def delete_teacher(teacher_id):
+    try:
+        teacher = User.query.get_or_404(teacher_id)
+        # 添加用户类型验证，确保只有教师类型(2)才能被删除
+        if teacher.user_type != 2:
+            flash('只能删除教师类型的用户！', 'danger')
+            return redirect(url_for('teacher'))
+        
+        db.session.delete(teacher)
+        db.session.commit()
+        flash('成功删除教师！')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'删除教师失败: {e}', 'danger')
+    return redirect(url_for('teacher'))
+
+# 管理员查询学生
+@app.route('/admin/student', methods=['GET'])
+def student():
+    # 获取搜索参数
+    search_query = request.args.get('search', '').strip()
+    
+    # 基础查询
+    query = User.query.filter_by(user_type=3)
+    
+    # 如果有搜索条件
+    if search_query:
+        query = query.filter(
+            db.or_(
+                User.id.ilike(f'%{search_query}%'),
+                User.name.ilike(f'%{search_query}%')
+            )
+        )
+
+    students = query.all()
+    form = UserRegistrationForm()
+    return render_template('admin/student.html', students=students, form=form)
+
+# Edit Student
+@app.route('/admin/edit_student/<string:student_id>', methods=['GET', 'POST'])
+def edit_student(student_id):
+    student = User.query.get_or_404(student_id)
+    form = UserRegistrationForm(obj=student)
+
+    # 获取已选的课程
+    enrolled_courses = db.session.query(Course).join(Student_Course).filter(
+        Student_Course.student_id == student_id
+    ).all()
+    # 搜索参数
+    search_query = request.args.get('search', '').strip()
+    if search_query:
+        enrolled_courses = db.session.query(Course).join(Student_Course).filter(
+            Student_Course.student_id == student_id,
+            db.or_(
+                Course.id.ilike(f'%{search_query}%'),
+                Course.name.ilike(f'%{search_query}%')
+            )
+        ).all()
+    if form.validate_on_submit():
+        try:
+            student.name = form.name.data
+            student.mail = form.mail.data
+            student.tele_num = form.tele_num.data
+            db.session.commit()
+            flash('成功更新学生！')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'更新学生失败: {e}', 'danger')
+        return redirect(url_for('edit_student', student_id=student.id))
+    return render_template('admin/edit_student.html', form=form, student=student, enrolled_courses=enrolled_courses, search_query=search_query)
+
+# delete course from student
+@app.route('/admin/delete_course_from_student/<string:course_id>/<string:student_id>', methods=['POST'])
+def delete_course_from_student(course_id, student_id):
+    try:
+        student_course = Student_Course.query.filter_by(
+            course_id=course_id, 
+            student_id=student_id
+        ).first_or_404()  
+        db.session.delete(student_course)
+        db.session.commit()
+        flash('成功删除学生选课！', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'删除学生选课失败: {e}', 'danger')
+    return redirect(url_for('edit_student', student_id=student_id))
+
+# add course to student
+@app.route('/admin/add_course_to_student/<string:student_id>', methods=['GET', 'POST'])
+def add_course_to_student(student_id):
+    student = User.query.get_or_404(student_id)
+
+    # 搜索参数
+    search_query = request.args.get('search', '').strip()
+    
+    # 获取所有课程
+    all_courses = Course.query.all()
+    # 已选课的课程ID
+    enrolled_course_ids = [sc.course_id for sc in 
+                          Student_Course.query.filter_by(student_id=student_id).all()]
+    
+    # 未选课的课程
+    available_courses = all_courses.filter(Course.id.notin_(enrolled_course_ids))
+
+    # 如果有搜索条件
+    if search_query:
+        available_courses = available_courses.filter(
+            db.or_(
+                Course.id.ilike(f'%{search_query}%'),
+                Course.name.ilike(f'%{search_query}%')
+            )
+        )
+
+    available_courses = available_courses.all()
+
+    # 处理添加学生选课
+    if request.method == 'POST':
+        course_id = request.form.get('course_id')
+        if course_id:
+            try:
+                # 检查是否已经选课
+                existing_enrollment = Student_Course.query.filter_by(
+                    course_id=course_id, 
+                    student_id=student_id
+                ).first()
+                
+                if existing_enrollment:
+                    flash('该学生已经选过此课程！', 'warning')
+                else:
+                    # 创建新的选课记录
+                    new_enrollment = Student_Course(
+                        course_id=course_id,
+                        student_id=student_id
+                    )
+                    db.session.add(new_enrollment)
+                    db.session.commit()
+                    flash('成功添加学生选课！', 'success')
+                    
+                    # 重定向回添加页面，可以继续添加
+                    return redirect(url_for('add_course_to_student', student_id=student_id))
+
+            except Exception as e:
+                db.session.rollback()
+                flash(f'添加学生选课失败: {e}', 'danger')
+
+    return render_template('admin/add_course_to_student.html',
+                         student=student,
+                         available_courses=available_courses,
+                         search_query=search_query)
+
+# Add Student
+@app.route('/admin/add_student', methods=['GET', 'POST'])
+def add_student():
+    form = UserRegistrationForm()
+    if form.validate_on_submit():
+        try:
+            student = User(
+                id=form.id.data,
+                name=form.name.data,
+                mail=form.mail.data,
+                tele_num=form.tele_num.data,
+                key=generate_password_hash(form.key.data),  # 使用哈希存储密码
+                user_type=3  # 学生类型
+            )
+            db.session.add(student)
+            db.session.commit()
+            flash('成功添加学生！')
+            return redirect(url_for('student'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'添加学生失败: {e}', 'danger')
+    return render_template('admin/add_student.html', form=form)
+
+# Delete Student
+@app.route('/admin/delete_student/<string:student_id>', methods=['POST'])
+def delete_student(student_id):
+    try:
+        student = User.query.get_or_404(student_id)
+        # 添加用户类型验证，确保只有学生类型(3)才能被删除
+        if student.user_type != 3:
+            flash('只能删除学生类型的用户！', 'danger')
+            return redirect(url_for('student'))
+        db.session.delete(student)
+        db.session.commit()
+        flash('成功删除学生！')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'删除学生失败: {e}', 'danger')
+    return redirect(url_for('student'))
+
+# 管理员查询课程
+@app.route('/admin/course', methods=['GET'])
+def course():
+    # 获取搜索参数
+    search_query = request.args.get('search', '').strip()
+    
+    # 基础查询
+    query = Course.query
+    
+    # 如果有搜索条件
+    if search_query:
+        query = query.filter(
+            db.or_(
+                Course.id.ilike(f'%{search_query}%'),
+                Course.name.ilike(f'%{search_query}%')
+            )
+        )
+    
+    courses = query.all()
+    form = CourseForm()
+    return render_template('admin/course.html', courses=courses, form=form)
+
+# Edit Course
+@app.route('/admin/edit_course/<string:course_id>', methods=['GET', 'POST'])
+def edit_course(course_id):
+    course = Course.query.get_or_404(course_id)
+    form = CourseForm(obj=course)
+    
+    # 获取已选课的学生
+    enrolled_students = db.session.query(User).join(Student_Course).filter(
+        Student_Course.course_id == course_id
+    ).all()
+    
+    # 搜索参数
+    search_query = request.args.get('search', '').strip()
+    
+    if search_query:
+        enrolled_students = db.session.query(User).join(Student_Course).filter(
+            Student_Course.course_id == course_id,
+            db.or_(
+                User.id.ilike(f'%{search_query}%'),
+                User.name.ilike(f'%{search_query}%')
+            )
+        ).all()
+    
+    if form.validate_on_submit():
+        try:
+            course.name = form.name.data
+            course.teacher_id = form.teacher_id.data
+            db.session.commit()
+            flash('成功更新课程！', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'更新课程失败: {e}', 'danger')
+        return redirect(url_for('edit_course', course_id=course.id))
+    
+    return render_template('admin/edit_course.html', 
+                         form=form, 
+                         course=course,
+                         enrolled_students=enrolled_students,
+                         search_query=search_query)
+
+# delete student from course
+@app.route('/admin/delete_student_from_course/<string:course_id>/<string:student_id>', methods=['POST'])
+def delete_student_from_course(course_id, student_id):
+    try:
+        student_course = Student_Course.query.filter_by(
+            course_id=course_id, 
+            student_id=student_id
+        ).first_or_404()  
+        db.session.delete(student_course)
+        db.session.commit()
+        flash('成功删除学生选课！', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'删除学生选课失败: {e}', 'danger')
+    return redirect(url_for('edit_course', course_id=course_id))
+
+# add student to course
+@app.route('/admin/add_student_to_course/<string:course_id>', methods=['GET', 'POST'])
+def add_student_to_course(course_id):
+    course = Course.query.get_or_404(course_id)
+    
+    # 搜索参数
+    search_query = request.args.get('search', '').strip()
+    
+    # 获取所有学生
+    all_students = User.query.filter_by(user_type=3)
+    
+    # 已选课的学生ID
+    enrolled_student_ids = [sc.student_id for sc in 
+                          Student_Course.query.filter_by(course_id=course_id).all()]
+    
+    # 未选课的学生
+    available_students = all_students.filter(User.id.notin_(enrolled_student_ids))
+    
+    # 如果有搜索条件
+    if search_query:
+        available_students = available_students.filter(
+            db.or_(
+                User.id.ilike(f'%{search_query}%'),
+                User.name.ilike(f'%{search_query}%')
+            )
+        )
+    
+    available_students = available_students.all()
+    
+    # 处理添加学生选课
+    if request.method == 'POST':
+        student_id = request.form.get('student_id')
+        if student_id:
+            try:
+                # 检查是否已经选课
+                existing_enrollment = Student_Course.query.filter_by(
+                    course_id=course_id, 
+                    student_id=student_id
+                ).first()
+                
+                if existing_enrollment:
+                    flash('该学生已经选过此课程！', 'warning')
+                else:
+                    # 创建新的选课记录
+                    new_enrollment = Student_Course(
+                        course_id=course_id,
+                        student_id=student_id
+                    )
+                    db.session.add(new_enrollment)
+                    db.session.commit()
+                    flash('成功添加学生选课！', 'success')
+                    
+                    # 重定向回添加页面，可以继续添加
+                    return redirect(url_for('add_student_to_course', course_id=course_id))
+                    
+            except Exception as e:
+                db.session.rollback()
+                flash(f'添加学生选课失败: {e}', 'danger')
+    
+    return render_template('admin/add_student_to_course.html',
+                         course=course,
+                         available_students=available_students,
+                         search_query=search_query)
+
+# Add Course
+@app.route('/admin/add_course', methods=['GET', 'POST'])
+def add_course():
+    form = CourseForm()
+    if form.validate_on_submit():
+        try:
+            course = Course(
+                id=form.id.data,
+                name=form.name.data,
+                teacher_id=form.teacher_id.data
+            )
+            db.session.add(course)
+            db.session.commit()
+            flash('成功添加课程！')
+            return redirect(url_for('courses'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'添加课程失败: {e}', 'danger')
+    return render_template('admin/add_course.html', form=form)
+
+# Delete Course
+@app.route('/admin/delete_course/<string:course_id>', methods=['POST'])
+def delete_course(course_id):
+    try:
+        course = Course.query.get_or_404(course_id)
+        db.session.delete(course)
+        db.session.commit()
+        flash('成功删除课程！')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'删除课程失败: {e}', 'danger')
+    return redirect(url_for('course'))
+
+#TODO: 课程统计信息
+# course info
+@app.route('/admin/course_info/<string:course_id>', methods=['GET'])
+def course_info(course_id):
+    course = Course.query.get_or_404(course_id)
+    return render_template('admin/course_info.html', course=course)

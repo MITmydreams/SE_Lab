@@ -11,7 +11,6 @@ class User(db.Model):
     mail = db.Column('mail', db.String(50))
     tele_num = db.Column('tele_num', db.String(11))
     user_type = db.Column('user_type', db.Integer)
-
     teacher_courses = db.relationship('Course', back_populates='teacher', cascade='all, delete-orphan')
     student_courses = db.relationship('Student_Course', back_populates='student', cascade='all, delete-orphan')
     sent_emojis = db.relationship('Emoji', back_populates='student', cascade='all, delete-orphan')
