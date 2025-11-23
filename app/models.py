@@ -61,8 +61,8 @@ class Student_Course(db.Model):
 
 class Emoji(db.Model):
     id = db.Column('Emoji_ID', db.String(10), primary_key=True)
-    student_id = db.Column('Student_ID', db.String(20), db.ForeignKey('user.User_ID'), primary_key=True)
-    course_id = db.Column('Course_ID', db.String(20), db.ForeignKey('course.Course_ID'), primary_key=True)
+    student_id = db.Column('Student_ID', db.String(20), db.ForeignKey('user.User_ID'))
+    course_id = db.Column('Course_ID', db.String(20), db.ForeignKey('course.Course_ID'))
     time = db.Column('time', db.DateTime)
     type = db.Column('type', db.Integer)
     
@@ -71,7 +71,7 @@ class Emoji(db.Model):
     course = db.relationship('Course', back_populates='emojis')
     
     __table_args__ = (
-        CheckConstraint('type >= 1', name='check_emoji_type_positive')
+        CheckConstraint('type >= 1', name='check_emoji_type_positive'),
     )
     
     @validates('type')
