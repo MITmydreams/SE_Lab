@@ -28,6 +28,10 @@ This is our project in "Software Engineer " course .
    flask db migrate -m "Initial migration."
    flask db upgrade
    ```
+6. 运行代码：
+   ```python
+    python main.py
+    ```
 ## 目录结构
 ```
 SE_Lab/
