@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>课程编辑</title>
+
+    <link href="{{ url_for('static', filename='style1.css') }}" rel="stylesheet">
+    <link href="/css/bootstrap-4.4.1.css" rel="stylesheet">
+</head>
+
+<body class="app header-fixed sidebar-fixed aside-menu-fixed sidebar-lg-show">
+
+<header class="app-header navbar">
+    <span class="badge badge-light">软件工程实践 Lab</span>
+</header>
+
+<div class="app-body">
+    <main class="main">
+        <div class="container-fluid">
+            <div class="animated fadeIn">
+
+                <div class="card">
+                    <div class="card-body">
+
+                        <!-- 标题 -->
+                        <div class="row">
+                            <div class="col-sm-6">
+                                <h1 class="pt-3">编辑课程：{{ course.id }}</h1>
+                                <span class="badge badge-danger">Version 1.0</span>
+                            </div>
+                            <div class="col-sm-6 text-right">
+                                <a href="{{ url_for('course') }}" class="btn btn-secondary">
+                                    返回课程列表
+                                </a>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <!-- 课程信息编辑部分 -->
+                        <h4>课程信息</h4>
+                        <form method="POST">
+                            {{ form.hidden_tag() }}
+
+                            <div class="form-group">
+                                <label>课程名称</label>
+                                {{ form.name(class="form-control") }}
+                            </div>
+
+                            <div class="form-group">
+                                <label>教师ID</label>
+                                {{ form.teacher_id(class="form-control") }}
+                            </div>
+
+                            <button type="submit" class="btn btn-primary mt-2">保存修改</button>
+                        </form>
+
+                        <hr>
+
+                        <!-- 课程选课学生信息 -->
+                        <h4>选课学生信息</h4>
+
+                        <!-- 添加学生按钮 -->
+                        <div class="text-right mb-2">
+                            <a href="{{ url_for('add_student_to_course', course_id=course.id) }}"
+                               class="btn btn-success">
+                                添加学生
+                            </a>
+                        </div>
+
+                        <!-- 搜索框 -->
+                        <form method="GET" class="form-inline mb-3">
+                            <input type="text" name="search" class="form-control mr-2"
+                                   placeholder="搜索学生ID或姓名"
+                                   value="{{ search_query }}">
+                            <button type="submit" class="btn btn-info">搜索</button>
+                        </form>
+
+                        <!-- 已选学生列表 -->
+                        <table class="table table-bordered table-striped">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>学号</th>
+                                    <th>姓名</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for student in enrolled_students %}
+                                <tr>
+                                    <td>{{ student.id }}</td>
+                                    <td>{{ student.name }}</td>
+
+                                    <td>
+                                        <!-- 删除按钮 -->
+                                        <form method="POST"
+                                            action="{{ url_for('delete_student_from_course',
+                                                               student_id=student.id,
+                                                               course_id=course.id) }}"
+                                            style="display:inline;"
+                                            onsubmit="return confirm('确定删除该选课记录吗？');">
+
+                                            <button type="submit"
+                                                    class="btn btn-danger btn-sm">
+                                                删除
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+
+                                {% else %}
+                                <tr>
+                                    <td colspan="3" class="text-center">暂无学生选课</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+
+                        <!-- flash 信息 -->
+                        {% with messages = get_flashed_messages(with_categories=true) %}
+                            {% if messages %}
+                                {% for category, message in messages %}
+                                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                                {% endfor %}
+                            {% endif %}
+                        {% endwith %}
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+</div>
+
+</body>
+</html>

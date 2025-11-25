@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>欢迎管理员 - 课程评价系统</title>
+
+    <!-- 内部样式 -->
+    <style>
+        .welcome-container {
+            text-align: center;
+            margin-top: 100px;
+        }
+        .welcome-container h1 {
+            font-size: 36px;
+            margin-bottom: 40px;
+        }
+        .welcome-container .btn {
+            width: 180px;
+            height: 50px;
+            font-size: 18px;
+            margin: 10px;
+        }
+        .section-title {
+            font-size: 24px;
+            margin-top: 40px;
+            margin-bottom: 20px;
+        }
+    </style>
+
+    <!-- 外部样式 -->
+    <link href="{{ url_for('static', filename='style1.css') }}" rel="stylesheet">
+    <link href="/css/bootstrap-4.4.1.css" rel="stylesheet" type="text/css">
+</head>
+
+<body class="app header-fixed sidebar-fixed aside-menu-fixed sidebar-lg-show">
+
+    <!-- 顶部栏 -->
+    <header class="app-header navbar">
+        <span class="badge badge-light">软件工程实践 Lab</span>
+    </header>
+
+    <div class="app-body">
+        <main class="main">
+            <div class="container-fluid">
+                <div class="animated fadeIn">
+
+                    <div class="welcome-container">
+                        <h1>欢迎回来，{{ user_name }}！</h1>
+
+                        <!-- 个人功能 -->
+                        <div class="section-title">个人功能</div>
+                        <a href="{{ url_for('profile') }}" class="btn btn-primary">查看个人信息</a>
+                        <a href="{{ url_for('edit_profile') }}" class="btn btn-warning">编辑个人信息</a>
+                        <a href="{{ url_for('change_password') }}" class="btn btn-info">修改密码</a>
+
+                        <!-- 管理员功能 -->
+                        <div class="section-title">管理员功能</div>
+                        <a href="{{ url_for('teacher') }}" class="btn btn-success">教师管理</a>
+                        <a href="{{ url_for('student') }}" class="btn btn-success">学生管理</a>
+                        <a href="{{ url_for('course') }}" class="btn btn-success">课程管理</a>
+
+                        <!-- flash 消息 -->
+                        {% with messages = get_flashed_messages(with_categories=true) %}
+                            {% if messages %}
+                                <br><br>
+                                {% for category, message in messages %}
+                                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                                {% endfor %}
+                            {% endif %}
+                        {% endwith %}
+                    </div>
+
+                </div>
+            </div>
+        </main>
+    </div>
+
+</body>
+</html>

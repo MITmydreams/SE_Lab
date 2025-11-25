@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <base href="./">
+    <meta charset="utf-8">
+
+    <!-- 浏览器兼容 -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+    <!-- 移动端 viewport -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>课程评价系统 - 编辑个人信息</title>
+
+    <!-- 自定义样式 -->
+    <style>
+        .form-container {
+            width: 400px;
+            margin: 0 auto;
+            text-align: left;
+            padding: 20px;
+        }
+        .form-container input {
+            width: 100%;
+            margin-bottom: 12px;
+            padding: 6px;
+        }
+    </style>
+
+    <!-- 外部样式 -->
+    <link href="{{ url_for('static', filename='style1.css') }}" rel="stylesheet">
+    <link href="/css/bootstrap-4.4.1.css" rel="stylesheet" type="text/css">
+</head>
+
+<body class="app header-fixed sidebar-fixed aside-menu-fixed sidebar-lg-show">
+
+    <!-- 顶部栏 -->
+    <header class="app-header navbar">
+        <span class="badge badge-light">软件工程实践 Lab</span>
+    </header>
+
+    <div class="app-body">
+
+        <main class="main">
+            <div class="container-fluid">
+                <div class="animated fadeIn">
+
+                    <div class="card">
+                        <div class="card-body">
+
+                            <!-- 页面标题 -->
+                            <div class="row">
+                                <div class="col-sm-5 col-lg-6">
+                                    <h1 class="pt-3">编辑个人信息</h1>
+                                    <span class="badge badge-danger">Version 1.0</span>
+                                </div>
+                            </div>
+
+                            <!-- 表单容器 -->
+                            <div class="chart-wrapper" style="margin-top:20px;">
+                                <div style="width:100%; text-align:center;">
+
+                                    <form method="POST" class="form-container">
+
+                                        {{ form.hidden_tag() }}
+
+                                        <!-- 用户ID（不可修改） -->
+                                        <label>用户ID：</label>
+                                        <input type="text" value="{{ user.id }}" disabled>
+                                        <br>
+
+                                        <!-- 用户类型（不可修改） -->
+                                        <label>用户类型：</label>
+                                        <input type="text" value="{{ role_name }}" disabled>
+                                        <br>
+
+                                        <!-- 可修改字段：用户名 -->
+                                        <label>用户名：</label>
+                                        {{ form.name(class="form-control") }}
+                                        <br>
+
+                                        <!-- 可修改字段：邮箱 -->
+                                        <label>邮箱：</label>
+                                        {{ form.mail(class="form-control") }}
+                                        <br>
+
+                                        <!-- 可修改字段：电话 -->
+                                        <label>电话号码：</label>
+                                        {{ form.tele_num(class="form-control") }}
+                                        <br>
+
+                                        <!-- 按钮 -->
+                                        <button type="submit" class="btn btn-success">保存修改</button>
+                                        <a href="{{ url_for('profile') }}" class="btn btn-secondary">取消</a>
+
+                                    </form>
+
+                                    <!-- 显示 flash 信息 -->
+                                    {% with messages = get_flashed_messages(with_categories=true) %}
+                                        {% if messages %}
+                                            <br>
+                                            {% for category, message in messages %}
+                                                <div class="alert alert-{{ category }}">{{ message }}</div>
+                                            {% endfor %}
+                                        {% endif %}
+                                    {% endwith %}
+
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </main>
+
+    </div>
+
+</body>
+
+</html>

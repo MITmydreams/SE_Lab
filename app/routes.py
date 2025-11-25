@@ -63,7 +63,34 @@ def welcome():
     if 'user_id' not in session:
         flash('请先登录', 'danger')
         return redirect(url_for('login'))
-    return render_template('welcome.html', user_name=session.get('user_name'))
+    
+    # 获取当前用户信息
+    user_id = session.get('user_id')
+    user = User.query.get(user_id)
+    
+    if user.is_admin:
+        return redirect(url_for('welcome_admin'))
+    elif user.is_teacher:
+        return redirect(url_for('welcome_teacher'))
+    elif user.is_student:
+        return redirect(url_for('welcome_student'))
+    else:
+        flash('用户类型异常', 'danger')
+        return redirect(url_for('login'))
+
+
+@app.route('/welcome_admin')
+def welcome_admin():
+    return render_template('welcome_admin.html', user_name=session.get('user_name'))
+
+@app.route('/welcome_teacher')
+def welcome_teacher():
+    return render_template('welcome_teacher.html', user_name=session.get('user_name'))
+
+@app.route('/welcome_student')
+def welcome_student():
+    return render_template('welcome_student.html', user_name=session.get('user_name'))
+
 
 # 登录
 @app.route('/login', methods=['GET', 'POST'])
@@ -634,7 +661,7 @@ def add_course():
             db.session.add(course)
             db.session.commit()
             flash('成功添加课程！')
-            return redirect(url_for('courses'))
+            return redirect(url_for('course'))
         except Exception as e:
             db.session.rollback()
             flash(f'添加课程失败: {e}', 'danger')

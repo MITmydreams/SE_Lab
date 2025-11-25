@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <base href="./">
+    <meta charset="utf-8">
+
+    <!-- 配置：浏览器兼容 -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+    <!-- 配置：移动端 viewport -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>课程评价系统 - 登录</title>
+
+    <!-- 配置：加载你自己 static/style1.css -->
+    <link href="{{ url_for('static', filename='style1.css') }}" rel="stylesheet">
+
+    <!-- 配置：Bootstrap 4 样式 -->
+    <link href="/css/bootstrap-4.4.1.css" rel="stylesheet" type="text/css">
+
+    <!-- 配置：顶部栏 -->
+    <header class="app-header navbar">
+        <span class="badge badge-light">软件工程实践 Lab</span>
+    </header>
+
+    <div class="app-body">
+
+        <!-- 配置：主内容区域 -->
+        <main class="main">
+            <div class="container-fluid">
+                <div class="animated fadeIn">
+
+                    <div class="card">
+                        <div class="card-body">
+
+                            <!-- 页面标题 -->
+                            <div class="row">
+                                <div class="col-sm-5 col-lg-6">
+                                    <h1 class="pt-3">登录</h1>
+                                    <span class="badge badge-danger">Version 1.0</span>
+                                </div>
+                            </div>
+
+                            <!-- 登录框外层容器 -->
+                            <div class="chart-wrapper" style="height:430px;margin-top:20px;">
+
+                                <!-- 让内容居中 -->
+                                <div style="width:100%;text-align:center">
+
+                                    <!-- ※※※ 功能：登录表单（与后端接轨） ※※※ -->
+                                    <!-- 绑定 URL: /login -->
+                                    <!-- method=POST → Flask login() 处理 -->
+                                    <form method="POST">
+
+                                        <!-- ★★★★★ 关键：Flask-WTF 必须添加 CSRF token -->
+                                        {{ form.hidden_tag() }}
+
+                                        <br><br><br><br><br>
+
+                                        <!-- ★ 与后端字段 form.user_id 对应 -->
+                                        用户ID:
+                                        <input type="text" name="user_id" size="20"
+                                               value="{{ form.user_id.data or '' }}" required>
+                                        <br>
+
+                                        <!-- ★ 与后端字段 form.key 对应 -->
+                                        密码:&nbsp;&nbsp;&nbsp;&nbsp;
+                                        <input type="password" name="key" size="20" required>
+                                        <br><br>
+
+                                        <!-- ★ 表单提交 → login() 验证账号密码 -->
+                                        <input class="btn bg-info" type="submit" value="登录">
+                                    </form>
+
+                                    <!-- 若后端 flash() 有消息，会显示这里 -->
+                                    {% with messages = get_flashed_messages(with_categories=true) %}
+                                        {% if messages %}
+                                            <br>
+                                            {% for category, message in messages %}
+                                                <div class="alert alert-{{ category }}">{{ message }}</div>
+                                            {% endfor %}
+                                        {% endif %}
+                                    {% endwith %}
+
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>添加学生 - 学生管理系统</title>
+
+    <!-- 外部样式 -->
+    <link href="{{ url_for('static', filename='style1.css') }}" rel="stylesheet">
+    <link href="/css/bootstrap-4.4.1.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="app header-fixed sidebar-fixed aside-menu-fixed sidebar-lg-show">
+
+    <!-- 顶部栏 -->
+    <header class="app-header navbar">
+        <span class="badge badge-light">软件工程实践 Lab</span>
+    </header>
+
+    <div class="app-body">
+        <main class="main">
+            <div class="container-fluid">
+                <div class="animated fadeIn">
+
+                    <!-- 页面标题 -->
+                    <h3 class="mt-4">添加学生</h3>
+                    <p class="text-muted">
+                        请填写学生基本信息
+                    </p>
+
+                    <!-- 返回按钮 -->
+                    <a href="{{ url_for('student') }}" class="btn btn-secondary mb-3">
+                        返回学生列表
+                    </a>
+
+                    <!-- Flash 消息显示 -->
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }} mt-3">
+                                    {{ message }}
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <!-- 主要卡片 -->
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            学生信息表单
+                        </div>
+
+                        <div class="card-body">
+
+                            <form method="POST" action="{{ url_for('add_student') }}">
+                                {{ form.hidden_tag() }}
+
+                                <!-- 学号 -->
+                                <div class="form-group">
+                                    {{ form.id.label(class="form-label") }}
+                                    {{ form.id(class="form-control", placeholder="请输入学生学号") }}
+                                    {% if form.id.errors %}
+                                        <small class="text-danger">{{ form.id.errors[0] }}</small>
+                                    {% endif %}
+                                </div>
+
+                                <!-- 姓名 -->
+                                <div class="form-group mt-3">
+                                    {{ form.name.label(class="form-label") }}
+                                    {{ form.name(class="form-control", placeholder="请输入学生姓名") }}
+                                    {% if form.name.errors %}
+                                        <small class="text-danger">{{ form.name.errors[0] }}</small>
+                                    {% endif %}
+                                </div>
+
+                                <!-- 邮箱 -->
+                                <div class="form-group mt-3">
+                                    {{ form.mail.label(class="form-label") }}
+                                    {{ form.mail(class="form-control", placeholder="请输入学生邮箱") }}
+                                    {% if form.mail.errors %}
+                                        <small class="text-danger">{{ form.mail.errors[0] }}</small>
+                                    {% endif %}
+                                </div>
+
+                                <!-- 电话 -->
+                                <div class="form-group mt-3">
+                                    {{ form.tele_num.label(class="form-label") }}
+                                    {{ form.tele_num(class="form-control", placeholder="请输入学生手机号") }}
+                                    {% if form.tele_num.errors %}
+                                        <small class="text-danger">{{ form.tele_num.errors[0] }}</small>
+                                    {% endif %}
+                                </div>
+
+                                <!-- 密码 -->
+                                <div class="form-group mt-3">
+                                    {{ form.key.label(class="form-label") }}
+                                    {{ form.key(class="form-control", type="password", placeholder="请输入初始密码") }}
+                                    {% if form.key.errors %}
+                                        <small class="text-danger">{{ form.key.errors[0] }}</small>
+                                    {% endif %}
+                                </div>
+
+                                <button type="submit" class="btn btn-success mt-4">
+                                    添加学生
+                                </button>
+
+                            </form>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </main>
+    </div>
+
+</body>
+</html>

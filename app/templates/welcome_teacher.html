@@ -1,0 +1,35 @@
+<!--登录后的欢迎页面，根据用户角色显示不同内容-->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <title>欢迎页面</title>
+    <link href="{{ url_for('static', filename='style1.css') }}" rel="stylesheet">
+    <link href="/css/bootstrap-4.4.1.css" rel="stylesheet">
+</head>
+<body class="app header-fixed sidebar-fixed aside-menu-fixed sidebar-lg-show">
+    <header class="app-header navbar">
+        <span class="badge badge-light">软件工程实践 Lab</span>
+    </header>
+
+    <div class="app-body">
+        <main class="main">
+            <div class="container text-center" style="margin-top:50px;">
+                <h1>欢迎回来，{{ user_name }}！</h1>
+                <br>
+                <a class="btn btn-primary" href="{{ url_for('profile') }}">查看个人信息</a>
+                <a class="btn btn-warning" href="{{ url_for('change_password') }}">修改密码</a>
+            </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <br>
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </main>
+    </div>
+</body>
+</html>

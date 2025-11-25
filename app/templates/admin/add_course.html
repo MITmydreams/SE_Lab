@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>添加课程 - 课程管理系统</title>
+
+    <!-- 外部样式 -->
+    <link href="{{ url_for('static', filename='style1.css') }}" rel="stylesheet">
+    <link href="/css/bootstrap-4.4.1.css" rel="stylesheet" type="text/css">
+</head>
+
+<body class="app header-fixed sidebar-fixed aside-menu-fixed sidebar-lg-show">
+
+<header class="app-header navbar">
+    <span class="badge badge-light">软件工程实践 Lab</span>
+</header>
+
+<div class="app-body">
+    <main class="main">
+        <div class="container-fluid">
+            <div class="animated fadeIn">
+
+                <!-- 页面标题 -->
+                <h3 class="mt-4">添加课程</h3>
+                <p class="text-muted">请填写课程基础信息</p>
+
+                <!-- 返回按钮 -->
+                <a href="{{ url_for('course') }}" class="btn btn-secondary mb-3">
+                    返回课程列表
+                </a>
+
+                <!-- Flash 消息 -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }} mt-3">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <!-- 主卡片 -->
+                <div class="card mt-3">
+                    <div class="card-header">
+                        课程信息表单
+                    </div>
+
+                    <div class="card-body">
+                        <form method="POST" action="{{ url_for('add_course') }}">
+                            {{ form.hidden_tag() }}
+
+                            <!-- 课程 ID -->
+                            <div class="form-group">
+                                {{ form.id.label(class="form-label") }}
+                                {{ form.id(class="form-control", placeholder="请输入课程编号") }}
+                                {% if form.id.errors %}
+                                    <small class="text-danger">{{ form.id.errors[0] }}</small>
+                                {% endif %}
+                            </div>
+
+                            <!-- 课程名称 -->
+                            <div class="form-group mt-3">
+                                {{ form.name.label(class="form-label") }}
+                                {{ form.name(class="form-control", placeholder="请输入课程名称") }}
+                                {% if form.name.errors %}
+                                    <small class="text-danger">{{ form.name.errors[0] }}</small>
+                                {% endif %}
+                            </div>
+
+                            <!-- 教师 ID -->
+                            <div class="form-group mt-3">
+                                {{ form.teacher_id.label(class="form-label") }}
+                                {{ form.teacher_id(class="form-control", placeholder="请输入任课教师的工号（Teacher_ID）") }}
+                                {% if form.teacher_id.errors %}
+                                    <small class="text-danger">{{ form.teacher_id.errors[0] }}</small>
+                                {% endif %}
+                            </div>
+
+                            <button type="submit" class="btn btn-success mt-4">
+                                添加课程
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+</div>
+
+</body>
+</html>

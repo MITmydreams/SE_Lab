@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>添加课程 - 学生选课管理</title>
+
+    <!-- 外部样式 -->
+    <link href="{{ url_for('static', filename='style1.css') }}" rel="stylesheet">
+    <link href="/css/bootstrap-4.4.1.css" rel="stylesheet" type="text/css">
+
+    <style>
+        .search-bar {
+            max-width: 500px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+
+<body class="app header-fixed sidebar-fixed aside-menu-fixed sidebar-lg-show">
+
+    <!-- 顶部栏 -->
+    <header class="app-header navbar">
+        <span class="badge badge-light">软件工程实践 Lab</span>
+    </header>
+
+    <div class="app-body">
+        <main class="main">
+            <div class="container-fluid">
+                <div class="animated fadeIn">
+
+                    <!-- 页面标题 -->
+                    <h3 class="mt-4">为学生添加课程</h3>
+                    <p class="text-muted">
+                        学生：{{ student.name }}（{{ student.id }}）
+                    </p>
+
+                    <!-- 返回按钮 -->
+                    <a href="{{ url_for('edit_student', student_id=student.id) }}" class="btn btn-secondary mb-3">
+                        返回学生信息
+                    </a>
+
+                    <!-- 搜索框 -->
+                    <form method="GET" action="{{ url_for('add_course_to_student', student_id=student.id) }}" class="search-bar form-inline">
+                        <input type="text" 
+                               name="search" 
+                               class="form-control mr-2 flex-grow-1"
+                               placeholder="搜索课程ID或课程名"
+                               value="{{ search_query }}">
+                        <button type="submit" class="btn btn-primary">搜索</button>
+                    </form>
+
+                    <!-- Flash 消息显示 -->
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }} mt-3">{{ message }}</div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <!-- 课程列表 -->
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            可添加的课程
+                        </div>
+
+                        <ul class="list-group list-group-flush">
+                            {% if available_courses %}
+                                {% for course in available_courses %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong>{{ course.name }}</strong><br>
+                                            <small class="text-muted">课程编号：{{ course.id }}</small>
+                                        </div>
+
+                                        <!-- 添加课程按钮 -->
+                                        <form method="POST" action="{{ url_for('add_course_to_student', student_id=student.id) }}">
+                                            <input type="hidden" name="course_id" value="{{ course.id }}">
+                                            <button type="submit" class="btn btn-success btn-sm">添加</button>
+                                        </form>
+                                    </li>
+                                {% endfor %}
+                            {% else %}
+                                <li class="list-group-item text-muted">
+                                    暂无可添加的课程
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </div>
+
+                </div>
+            </div>
+        </main>
+    </div>
+
+</body>
+</html>

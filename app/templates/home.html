@@ -1,0 +1,73 @@
+<!--包含登录和注册按钮-->
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>课程评价系统 - 首页</title>
+
+    <!-- 内部样式 -->
+    <style>
+        .home-container {
+            text-align: center;
+            margin-top: 150px;
+        }
+        .home-container h1 {
+            font-size: 36px;
+            margin-bottom: 40px;
+        }
+        .home-container .btn {
+            width: 150px;
+            height: 45px;
+            font-size: 18px;
+            margin: 10px;
+        }
+    </style>
+
+    <!-- 外部样式 -->
+    <link href="{{ url_for('static', filename='style1.css') }}" rel="stylesheet">
+    <link href="/css/bootstrap-4.4.1.css" rel="stylesheet" type="text/css">
+</head>
+
+<body class="app header-fixed sidebar-fixed aside-menu-fixed sidebar-lg-show">
+
+    <!-- 顶部栏 -->
+    <header class="app-header navbar">
+        <span class="badge badge-light">软件工程实践 Lab</span>
+    </header>
+
+    <div class="app-body">
+        <main class="main">
+            <div class="container-fluid">
+                <div class="animated fadeIn">
+
+                    <div class="home-container">
+                        <h1>课程评价系统</h1>
+
+                        <!-- 登录按钮 -->
+                        <a href="{{ url_for('login') }}" class="btn btn-info">登录</a>
+
+                        <!-- 注册按钮 -->
+                        <a href="{{ url_for('register') }}" class="btn btn-success">注册</a>
+
+                        <!-- 可以显示 flash 消息 -->
+                        {% with messages = get_flashed_messages(with_categories=true) %}
+                            {% if messages %}
+                                <br><br>
+                                {% for category, message in messages %}
+                                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                                {% endfor %}
+                            {% endif %}
+                        {% endwith %}
+                    </div>
+
+                </div>
+            </div>
+        </main>
+    </div>
+
+</body>
+</html>
