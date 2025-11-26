@@ -55,10 +55,10 @@
 
                             <!-- 课程 ID -->
                             <div class="form-group">
-                                {{ form.id.label(class="form-label") }}
-                                {{ form.id(class="form-control", placeholder="请输入课程编号") }}
-                                {% if form.id.errors %}
-                                    <small class="text-danger">{{ form.id.errors[0] }}</small>
+                                {{ form.course_id.label(class="form-label") }}
+                                {{ form.course_id(class="form-control", placeholder="请输入课程编号") }}
+                                {% if form.course_id.errors %}
+                                    <small class="text-danger">{{ form.course_id.errors[0] }}</small>
                                 {% endif %}
                             </div>
 
