@@ -14,8 +14,8 @@
     <title>课程评价系统 - 注册</title>
 
     <!-- 外部样式 -->
-    <link href="{{ url_for('static', filename='style1.css') }}" rel="stylesheet">
-    <link href="/css/bootstrap-4.4.1.css" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap-4.1.3-dist/css/bootstrap.min.css') }}">
+
 </head>
 
 <body class="app header-fixed sidebar-fixed aside-menu-fixed sidebar-lg-show">
@@ -82,9 +82,9 @@
                                         <label>用户类型:</label>
                                         <select name="user_type" required>
                                             <option value="">请选择用户类型</option>
-                                            <option value="1" {% if form.user_type.data==1 %}selected{% endif %}>管理员</option>
-                                            <option value="3" {% if form.user_type.data==3 %}selected{% endif %}>学生</option>
-                                            <option value="2" {% if form.user_type.data==2 %}selected{% endif %}>教师</option>
+                                            <option value="1" {% if form.user_type.data=='1' %}selected{% endif %}>管理员</option>
+                                            <option value="2" {% if form.user_type.data=='2' %}selected{% endif %}>教师</option>
+                                            <option value="3" {% if form.user_type.data=='3' %}selected{% endif %}>学生</option>
                                         </select>
                                         <br><br>
 
