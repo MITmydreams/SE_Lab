@@ -56,10 +56,10 @@
 
                             <!-- 课程 ID -->
                             <div class="form-group">
-                                {{ form.id.label(class="form-label") }}
-                                {{ form.id(class="form-control", placeholder="请输入课程编号") }}
-                                {% if form.id.errors %}
-                                    <small class="text-danger">{{ form.id.errors[0] }}</small>
+                                {{ form.course_id.label(class="form-label") }}
+                                {{ form.course_id(class="form-control", placeholder="请输入课程编号") }}
+                                {% if form.course_id.errors %}
+                                    <small class="text-danger">{{ form.course_id.errors[0] }}</small>
                                 {% endif %}
                             </div>
 
@@ -75,7 +75,7 @@
                             <!-- 教师 ID -->
                             <div class="form-group mt-3">
                                 {{ form.teacher_id.label(class="form-label") }}
-                                {{ form.teacher_id(class="form-control", placeholder="请输入任课教师的工号（Teacher_ID）") }}
+                                {{ form.teacher_id(class="form-select") }}
                                 {% if form.teacher_id.errors %}
                                     <small class="text-danger">{{ form.teacher_id.errors[0] }}</small>
                                 {% endif %}

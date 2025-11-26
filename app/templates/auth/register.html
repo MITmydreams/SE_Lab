@@ -82,8 +82,9 @@
                                         <label>用户类型:</label>
                                         <select name="user_type" required>
                                             <option value="">请选择用户类型</option>
-                                            <option value="student" {% if form.user_type.data=='student' %}selected{% endif %}>学生</option>
-                                            <option value="teacher" {% if form.user_type.data=='teacher' %}selected{% endif %}>教师</option>
+                                            <option value="1" {% if form.user_type.data==1 %}selected{% endif %}>管理员</option>
+                                            <option value="3" {% if form.user_type.data==3 %}selected{% endif %}>学生</option>
+                                            <option value="2" {% if form.user_type.data==2 %}selected{% endif %}>教师</option>
                                         </select>
                                         <br><br>
 

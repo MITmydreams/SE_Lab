@@ -61,10 +61,10 @@
 
                                 <!-- 学号 -->
                                 <div class="form-group">
-                                    {{ form.id.label(class="form-label") }}
-                                    {{ form.id(class="form-control", placeholder="请输入学生学号") }}
-                                    {% if form.id.errors %}
-                                        <small class="text-danger">{{ form.id.errors[0] }}</small>
+                                    {{ form.user_id.label(class="form-label") }}
+                                    {{ form.user_id(class="form-control", placeholder="请输入学生学号") }}
+                                    {% if form.user_id.errors %}
+                                        <small class="text-danger">{{ form.user_id.errors[0] }}</small>
                                     {% endif %}
                                 </div>
 

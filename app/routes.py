@@ -276,7 +276,7 @@ def teacher():
 @app.route('/admin/edit_teacher/<string:teacher_id>', methods=['GET', 'POST'])
 def edit_teacher(teacher_id):
     teacher = User.query.get_or_404(teacher_id)
-    form = UserRegistrationForm(obj=teacher)
+    form = UserProfileEditForm(obj=teacher)
     if form.validate_on_submit():
         try:
             teacher.name = form.name.data
@@ -294,10 +294,28 @@ def edit_teacher(teacher_id):
 @app.route('/admin/add_teacher', methods=['GET', 'POST'])
 def add_teacher():
     form = UserRegistrationForm()
+    form.user_type.data = 2  # 默认设置为教师类型
     if form.validate_on_submit():
+        # 检查用户是否已存在
+        existing_user = User.query.filter_by(id=form.user_id.data).first()
+        if existing_user:
+            flash('用户ID已存在，请选择其他ID', 'danger')
+            return render_template('auth/register.html', form=form)
+        
+        # 检查邮箱是否已被使用
+        existing_email = User.query.filter_by(mail=form.mail.data).first()
+        if existing_email:
+            flash('该邮箱已被注册，请使用其他邮箱', 'danger')
+            return render_template('auth/register.html', form=form)
+        
+        # 检查电话号码是否已被使用
+        existing_tele_num = User.query.filter_by(tele_num=form.tele_num.data).first()
+        if existing_tele_num:
+            flash('该电话号码已被注册，请使用其他号码', 'danger')
+            return render_template('auth/register.html', form=form)
         try:
             teacher = User(
-                id=form.id.data,
+                id=form.user_id.data,
                 name=form.name.data,
                 mail=form.mail.data,
                 tele_num=form.tele_num.data,
@@ -357,8 +375,7 @@ def student():
 @app.route('/admin/edit_student/<string:student_id>', methods=['GET', 'POST'])
 def edit_student(student_id):
     student = User.query.get_or_404(student_id)
-    form = UserRegistrationForm(obj=student)
-
+    form = UserProfileEditForm(obj=student)
     # 获取已选的课程
     enrolled_courses = db.session.query(Course).join(Student_Course).filter(
         Student_Course.student_id == student_id
@@ -469,10 +486,29 @@ def add_course_to_student(student_id):
 @app.route('/admin/add_student', methods=['GET', 'POST'])
 def add_student():
     form = UserRegistrationForm()
+    form.user_type.data = 3  # 默认设置为学生类型
     if form.validate_on_submit():
+        # 检查用户是否已存在
+        existing_user = User.query.filter_by(id=form.user_id.data).first()
+        if existing_user:
+            flash('用户ID已存在，请选择其他ID', 'danger')
+            return render_template('auth/register.html', form=form)
+        
+        # 检查邮箱是否已被使用
+        existing_email = User.query.filter_by(mail=form.mail.data).first()
+        if existing_email:
+            flash('该邮箱已被注册，请使用其他邮箱', 'danger')
+            return render_template('auth/register.html', form=form)
+        
+        # 检查电话号码是否已被使用
+        existing_tele_num = User.query.filter_by(tele_num=form.tele_num.data).first()
+        if existing_tele_num:
+            flash('该电话号码已被注册，请使用其他号码', 'danger')
+            return render_template('auth/register.html', form=form)
+        
         try:
             student = User(
-                id=form.id.data,
+                id=form.user_id.data,
                 name=form.name.data,
                 mail=form.mail.data,
                 tele_num=form.tele_num.data,
@@ -651,10 +687,32 @@ def add_student_to_course(course_id):
 @app.route('/admin/add_course', methods=['GET', 'POST'])
 def add_course():
     form = CourseForm()
+
+    # 获取所有教师数据
+    teachers = User.query.filter_by(user_type=2).all()  # user_type=2 代表教师
+    # 构建下拉列表选项：[(教师ID, 教师姓名(教师ID)), ...]
+    teacher_choices = [(teacher.id, f"{teacher.name} ({teacher.id})") for teacher in teachers]
+    form.teacher_id.choices = teacher_choices
+
     if form.validate_on_submit():
         try:
+            # 再次验证教师是否存在（双重保险）
+            teacher = User.query.filter_by(id=form.teacher_id.data).first()
+            if not teacher:
+                flash('教师ID不存在，请检查后重新输入', 'danger')
+                return render_template('admin/add_course.html', form=form)
+            if teacher.user_type != 2:  # 2代表教师类型
+                flash('该用户不是教师，请选择有效的教师ID', 'danger')
+                return render_template('admin/add_course.html', form=form)
+            
+            # 检查课程ID是否已存在
+            existing_course = Course.query.filter_by(id=form.course_id.data).first()
+            if existing_course:
+                flash('课程ID已存在，请使用不同的课程ID', 'danger')
+                return render_template('admin/add_course.html', form=form)
+            
             course = Course(
-                id=form.id.data,
+                id=form.course_id.data,
                 name=form.name.data,
                 teacher_id=form.teacher_id.data
             )

@@ -93,10 +93,12 @@ class CourseForm(FlaskForm):
         Length(min=1, max=20, message='课程ID长度必须在1-20个字符之间')
     ])
     
-    teacher_id = StringField('教师ID', validators=[
-        DataRequired(message='教师ID不能为空'),
-        Length(min=1, max=20, message='教师ID长度必须在1-20个字符之间')
-    ])
+    teacher_id = SelectField('教师ID', 
+        choices=[],  # 动态填充，在路由函数中设置
+        validators=[
+            DataRequired(message='请选择教师')
+        ]
+    )
     
     name = StringField('课程名称', validators=[
         DataRequired(message='课程名称不能为空'),
