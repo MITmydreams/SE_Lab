@@ -300,19 +300,19 @@ def add_teacher():
         existing_user = User.query.filter_by(id=form.user_id.data).first()
         if existing_user:
             flash('用户ID已存在，请选择其他ID', 'danger')
-            return render_template('auth/register.html', form=form)
+            return render_template('admin/add_teacher.html', form=form)
         
         # 检查邮箱是否已被使用
         existing_email = User.query.filter_by(mail=form.mail.data).first()
         if existing_email:
             flash('该邮箱已被注册，请使用其他邮箱', 'danger')
-            return render_template('auth/register.html', form=form)
+            return render_template('admin/add_teacher.html', form=form)
         
         # 检查电话号码是否已被使用
         existing_tele_num = User.query.filter_by(tele_num=form.tele_num.data).first()
         if existing_tele_num:
             flash('该电话号码已被注册，请使用其他号码', 'danger')
-            return render_template('auth/register.html', form=form)
+            return render_template('admin/add_teacher.html', form=form)
         try:
             teacher = User(
                 id=form.user_id.data,
@@ -492,19 +492,19 @@ def add_student():
         existing_user = User.query.filter_by(id=form.user_id.data).first()
         if existing_user:
             flash('用户ID已存在，请选择其他ID', 'danger')
-            return render_template('auth/register.html', form=form)
+            return render_template('admin/add_student.html', form=form)
         
         # 检查邮箱是否已被使用
         existing_email = User.query.filter_by(mail=form.mail.data).first()
         if existing_email:
             flash('该邮箱已被注册，请使用其他邮箱', 'danger')
-            return render_template('auth/register.html', form=form)
+            return render_template('admin/add_student.html', form=form)
         
         # 检查电话号码是否已被使用
         existing_tele_num = User.query.filter_by(tele_num=form.tele_num.data).first()
         if existing_tele_num:
             flash('该电话号码已被注册，请使用其他号码', 'danger')
-            return render_template('auth/register.html', form=form)
+            return render_template('admin/add_student.html', form=form)
         
         try:
             student = User(
