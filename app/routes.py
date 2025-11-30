@@ -428,7 +428,7 @@ def add_course_to_student(student_id):
     search_query = request.args.get('search', '').strip()
     
     # 获取所有课程
-    all_courses = Course.query.all()
+    all_courses = Course.query
     # 已选课的课程ID
     enrolled_course_ids = [sc.course_id for sc in 
                           Student_Course.query.filter_by(student_id=student_id).all()]
