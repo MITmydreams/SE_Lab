@@ -15,7 +15,7 @@ This is our project in "Software Engineer " course .
    ```
 3. 安装依赖：
    ```bash
-    pip install Flask SQLAlchemy Flask-Migrate WTForms pymysql flask_wtf matplotlib emoji_validator
+    pip install Flask SQLAlchemy Flask-Migrate WTForms pymysql flask_wtf matplotlib email_validator
     ```
 4. 配置数据库连接（在`config.py`中修改数据库信息）
     ```python
