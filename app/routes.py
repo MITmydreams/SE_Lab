@@ -573,6 +573,11 @@ def course():
 def edit_course(course_id):
     course = Course.query.get_or_404(course_id)
     form = CourseForm(obj=course)
+    # 获取所有教师数据
+    teachers = User.query.filter_by(user_type=2).all()  # user_type=2 代表教师
+    # 构建下拉列表选项：[(教师ID, 教师姓名(教师ID)), ...]
+    teacher_choices = [(teacher.id, f"{teacher.name} ({teacher.id})") for teacher in teachers]
+    form.teacher_id.choices = teacher_choices
     
     # 获取已选课的学生
     enrolled_students = db.session.query(User).join(Student_Course).filter(
