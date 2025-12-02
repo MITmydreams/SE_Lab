@@ -5,11 +5,56 @@ from app.forms import UserRegistrationForm, UserLoginForm, UserProfileEditForm, 
 from app.models import User, Course, Student_Course, Emoji
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
+import matplotlib
+matplotlib.use('Agg') 
 import matplotlib.pyplot as plt
 import io
 import base64
 import csv
+import matplotlib.font_manager as fm
+import platform
+from matplotlib.ticker import MaxNLocator
+def setup_chinese_font():
+    """设置中文字体支持"""
+    try:
+        # 根据操作系统选择字体
+        if platform.system() == 'Windows':
+            # Windows系统常用中文字体
+            font_paths = [
+                'C:/Windows/Fonts/simhei.ttf',  # 黑体
+                'C:/Windows/Fonts/simsun.ttc',  # 宋体
+                'C:/Windows/Fonts/microsoftyahei.ttf',  # 微软雅黑
+            ]
+        elif platform.system() == 'Darwin':  # macOS
+            font_paths = [
+                '/System/Library/Fonts/PingFang.ttc',  # 苹方
+                '/System/Library/Fonts/STHeiti Light.ttc',  # 华文黑体
+            ]
+        else:  # Linux
+            font_paths = [
+                '/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf',
+                '/usr/share/fonts/truetype/wqy/wqy-microhei.ttc',
+            ]
+        
+        # 尝试加载字体
+        for font_path in font_paths:
+            try:
+                font_prop = fm.FontProperties(fname=font_path)
+                plt.rcParams['font.family'] = font_prop.get_name()
+                plt.rcParams['axes.unicode_minus'] = False  # 解决负号显示问题
+                return True
+            except:
+                continue
+        
+        # 如果找不到字体，使用系统默认字体
+        plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'SimSun', 'Arial Unicode MS']
+        plt.rcParams['axes.unicode_minus'] = False
+        return True
+    except:
+        # 如果所有方法都失败，使用英文标签
+        return False
 
+chinese_font_available = setup_chinese_font()
 # 首页(登录前)
 @app.route('/')
 def home():
@@ -814,7 +859,7 @@ def export_emoji_history_csv(course_id):
         ])
     
     # 准备响应
-    filename = f"emoji历史_{course.id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+    filename = f"emoji_history_{course.id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
     
     response = make_response(output.getvalue())
     response.headers['Content-Type'] = 'text/csv; charset=utf-8'
@@ -883,55 +928,114 @@ def generate_emoji_timeline_chart(course_id, export=False):
         Emoji.time >= start_time,
         Emoji.time <= end_time
     ).order_by(Emoji.time.asc()).all()
+
+    # 在终端打印24小时内的数据
+    print(f"=== 课程 {course_id} 24小时内表情数据 ===")
+    print(f"时间范围: {start_time} 至 {end_time}")
+    print(f"查询到的表情数据总数: {len(emojis)}")
     
-    if not emojis:
-        return None  # 没有数据时返回None
-    
-    # 按小时和表情类型分组统计
-    hour_emoji_data = {}
-    emoji_types = set()
-    
-    for emoji in emojis:
-        # 获取小时信息
-        hour = emoji.time.replace(minute=0, second=0, microsecond=0)
-        emoji_type = emoji.type
-        
-        emoji_types.add(emoji_type)
-        
-        if hour not in hour_emoji_data:
-            hour_emoji_data[hour] = {}
-        
-        if emoji_type not in hour_emoji_data[hour]:
-            hour_emoji_data[hour][emoji_type] = 0
-        
-        hour_emoji_data[hour][emoji_type] += 1
-    
-    # 生成完整的时间序列（填充缺失的小时）
-    all_hours = [start_time + timedelta(hours=i) for i in range(25)]
-    complete_data = {}
-    
-    for emoji_type in emoji_types:
-        complete_data[emoji_type] = []
-        for hour in all_hours:
-            if hour in hour_emoji_data and emoji_type in hour_emoji_data[hour]:
-                complete_data[emoji_type].append(hour_emoji_data[hour][emoji_type])
-            else:
-                complete_data[emoji_type].append(0)
-    
-    # 生成图表
+    if emojis:
+        print("\n详细数据:")
+        print("-" * 70)
+        print(f"{'Emoji_ID':<10} {'Student_ID':<10} {'Course_ID':<10} {'时间':<20} {'表情类型'}")
+        print("-" * 70)
+        for emoji in emojis:
+            print(f"{emoji.id:<10} {emoji.student_id:<10} {emoji.course_id:<10} {emoji.time.strftime('%Y-%m-%d %H:%M:%S'):<20} {emoji.type}")
+        print("-" * 70)
+    else:
+        print("在指定时间范围内没有找到表情数据。")
+
     plt.figure(figsize=(12, 6))
     
-    # 为每种表情类型绘制曲线
-    for emoji_type, counts in complete_data.items():
-        hours_labels = [f"{h.hour:02d}:00" for h in all_hours]
-        plt.plot(hours_labels, counts, marker='o', label=f'表情 {emoji_type}', linewidth=2)
-    
-    plt.title(f'课程 {course_id} - 24小时情绪变化趋势', fontsize=14, fontweight='bold')
-    plt.xlabel('时间 (小时)', fontsize=12)
-    plt.ylabel('表情发送数量', fontsize=12)
-    plt.legend(title='表情类型', loc='best')
-    plt.grid(True, alpha=0.3)
-    plt.xticks(rotation=45)
+    if not emojis:
+        # 如果没有数据，显示提示信息
+        plt.text(0.5, 0.5, '暂无24小时内的表情数据', 
+                 horizontalalignment='center', 
+                 verticalalignment='center', 
+                 transform=plt.gca().transAxes, 
+                 fontsize=12)
+        plt.title(f'课程 {course_id} - 24小时情绪变化趋势', fontsize=14, fontweight='bold')
+        plt.xlabel('时间 (小时)', fontsize=12)
+        plt.ylabel('表情发送数量', fontsize=12)
+        plt.grid(True, alpha=0.3)
+    else:
+        # 按小时和表情类型分组统计
+        hour_emoji_data = {}
+        emoji_types = set()
+        
+        for emoji in emojis:
+            # 获取小时信息
+            hour = emoji.time.replace(minute=0, second=0, microsecond=0)
+            emoji_type = emoji.type
+            
+            emoji_types.add(emoji_type)
+            
+            if hour not in hour_emoji_data:
+                hour_emoji_data[hour] = {}
+            
+            if emoji_type not in hour_emoji_data[hour]:
+                hour_emoji_data[hour][emoji_type] = 0
+            
+            hour_emoji_data[hour][emoji_type] += 1
+        print("\n按小时分组的数据:")
+        for hour, data in hour_emoji_data.items():
+            print(f"{hour}: {data}")
+        # 获取实际存在数据的小时，并排序
+        actual_hours = sorted(hour_emoji_data.keys())
+        complete_data = {}
+        
+        for emoji_type in emoji_types:
+            complete_data[emoji_type] = []
+            for hour in actual_hours:
+                if hour in hour_emoji_data and emoji_type in hour_emoji_data[hour]:
+                    complete_data[emoji_type].append(hour_emoji_data[hour][emoji_type])
+                else:
+                    complete_data[emoji_type].append(0)
+        
+        # 为每种表情类型绘制曲线
+        colors = plt.cm.tab20.colors  # 使用更多颜色
+        hours_labels = [f"{h.hour:02d}:00" for h in actual_hours]
+        
+        # 找出所有数据中的最大值，用于设置合理的Y轴上限
+        max_count = 0
+        for counts in complete_data.values():
+            if counts:
+                current_max = max(counts)
+                if current_max > max_count:
+                    max_count = current_max
+        print("\ncomplete_data:", complete_data)
+        print("maxcount:", max_count)
+        for i, (emoji_type, counts) in enumerate(complete_data.items()):
+            # 使用索引获取颜色，如果表情类型过多则循环使用
+            color = colors[i % len(colors)]
+            plt.plot(hours_labels, counts, marker='o', label=f'表情 {emoji_type}', 
+                     linewidth=2, color=color)
+        
+        plt.title(f'课程 {course_id} - 24小时情绪变化趋势', fontsize=14, fontweight='bold')
+        plt.xlabel('时间 (小时)', fontsize=12)
+        plt.ylabel('表情发送数量', fontsize=12)
+        
+        # 优化图例，如果表情类型过多则限制显示
+        if len(emoji_types) > 10:
+            plt.legend(title='表情类型（部分显示）', loc='best', ncol=2)
+        else:
+            plt.legend(title='表情类型', loc='best')
+        
+        plt.grid(True, alpha=0.3)
+        plt.xticks(rotation=45)
+        # Y轴从0开始，更合理地显示数量数据
+        plt.ylim(bottom=0)
+
+        ax = plt.gca()
+        ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+        # 如果有数据，设置合适的Y轴上限，确保整数刻度显示
+        print("maxcount:", max_count)
+        if max_count > 0:
+            # 设置Y轴上限为最大值加1，确保所有数据点都能显示
+            plt.ylim(top=max_count + 1)
+            # 确保Y轴刻度为整数
+            plt.yticks(range(0, max_count + 2))
+
     plt.tight_layout()
 
     # 将图表转换为base64编码的图片或返回文件流
@@ -946,7 +1050,7 @@ def generate_emoji_timeline_chart(course_id, export=False):
         img_data = base64.b64encode(img_buffer.getvalue()).decode()
         plt.close()
         return f"data:image/png;base64,{img_data}"
-
+    
 # 管理员查看课程详细信息: 自定义时间范围表情数量统计
 @app.route('/admin/course_emoji_bar/<string:course_id>', methods=['GET', 'POST'])
 def course_emoji_bar(course_id):
@@ -1248,8 +1352,11 @@ def export_emoji_timeline(course_id):
     
     course = Course.query.get_or_404(course_id)
     img_buffer = generate_emoji_timeline_chart(course_id, export=True)
-    
-    filename = f"情绪变化趋势_{course_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
+    # 添加检查：如果img_buffer为None，说明没有数据
+    if img_buffer is None:
+        flash('该课程在当前时间范围内没有emoji数据，无法导出图表', 'warning')
+        return redirect(url_for('course_emoji_timeline', course_id=course_id))
+    filename = f"emoji_timeline_{course_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
     
     response = make_response(img_buffer.getvalue())
     response.headers['Content-Type'] = 'image/png'
@@ -1281,8 +1388,12 @@ def export_emoji_bar(course_id):
         end_time = datetime.strptime(end_date_str, '%Y-%m-%d')
         
         img_buffer = generate_emoji_bar_chart(course_id, start_time, end_time, export=True)
+        # 添加检查：如果img_buffer为None，说明没有数据
+        if img_buffer is None:
+            flash('该课程在指定时间范围内没有emoji数据，无法导出图表', 'warning')
+            return redirect(url_for('course_emoji_bar', course_id=course_id))
         
-        filename = f"表情数量统计_{course_id}_{start_time.strftime('%Y%m%d')}_至_{end_time.strftime('%Y%m%d')}.png"
+        filename = f"emoji_bar_{course_id}_{start_time.strftime('%Y%m%d')}_to_{end_time.strftime('%Y%m%d')}.png"
         
         response = make_response(img_buffer.getvalue())
         response.headers['Content-Type'] = 'image/png'
@@ -1319,7 +1430,12 @@ def export_emoji_pie(course_id):
         
         img_buffer = generate_emoji_pie_chart(course_id, start_time, end_time, export=True)
         
-        filename = f"表情分布饼图_{course_id}_{start_time.strftime('%Y%m%d')}_至_{end_time.strftime('%Y%m%d')}.png"
+        # 添加检查：如果img_buffer为None，说明没有数据
+        if img_buffer is None:
+            flash('该课程在指定时间范围内没有emoji数据，无法导出图表', 'warning')
+            return redirect(url_for('course_emoji_pie', course_id=course_id))
+        
+        filename = f"emoji_pie_{course_id}_{start_time.strftime('%Y%m%d')}_to_{end_time.strftime('%Y%m%d')}.png"
         
         response = make_response(img_buffer.getvalue())
         response.headers['Content-Type'] = 'image/png'
