@@ -48,7 +48,9 @@
                 </thead>
                 <tbody>
                     {% for student_course in courses %}
-                    <tr onclick="location.href='{{ url_for('student_emoji_page', course_id=student_course.course_id) }}'">
+                    <tr data-href="{{ url_for('student_emoji_page', course_id=student_course.course_id) }}"
+                        onclick="location.href=this.dataset.href">
+
                         <td>
                             <a href="{{ url_for('student_emoji_page', course_id=student_course.course_id) }}" class="course-link">
                                 <i class="fas fa-book-open me-2"></i>{{ student_course.course.name }}

@@ -1,0 +1,130 @@
+<!-- 管理员课程24小时emoji情绪变化曲线图 -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>课程 Emoji 情绪变化图</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap-4.1.3-dist/css/bootstrap.min.css') }}">
+</head>
+
+<body class="app header-fixed sidebar-fixed aside-menu-fixed sidebar-lg-show">
+
+<!-- 顶部栏 -->
+<header class="app-header navbar">
+    <span class="badge badge-light">软件工程实践 Lab</span>
+</header>
+
+<div class="app-body">
+    <main class="main">
+        <div class="container-fluid">
+            <div class="animated fadeIn">
+
+                <div class="card">
+                    <div class="card-body">
+
+                        <!-- 标题栏 -->
+                        <div class="row mb-3">
+                            <div class="col-sm-6">
+                                <h1 class="pt-3">课程 {{ course.id }} - 24小时Emoji变化曲线图</h1>
+                                <span class="badge badge-danger">Version 1.0</span>
+                            </div>
+
+                            <div class="col-sm-6 text-right">
+                                <a href="{{ url_for('course_info') }}" class="btn btn-secondary">
+                                    返回课程信息统计
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- 课程基本信息 -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <strong>课程信息</strong>
+                            </div>
+                            <div class="card-body">
+                                <p><strong>课程名称：</strong> {{ course.name }}</p>
+                                <p><strong>任课教师：</strong> 
+                                    {% if teacher %}
+                                        {{ teacher.name }}
+                                    {% else %}
+                                        <span class="text-muted">未指定</span>
+                                    {% endif %}
+                                </p>
+                                <p><strong>选课学生数量：</strong> {{ student_count }}</p>
+                                <p><strong>Emoji总数: </strong> {{ total_emojis }}</p>
+                            </div>
+                        </div>
+
+                        <!-- 图表区域 -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <strong>24小时情绪变化趋势图</strong>
+                           
+                            <!-- 导出按钮 -->
+                                <a href="{{ url_for('export_emoji_timeline', course_id=course.id) }}"
+                                class="btn btn-sm btn-outline-primary">
+                                    导出曲线图
+                                </a>
+                            </div>
+
+                            <div class="card-body text-center">
+                                {% if chart_image %}
+                                    <img src="{{ chart_image }}" alt="Emoji 情绪变化曲线图" class="img-fluid">
+                                {% else %}
+                                    <p class="text-muted">最近24小时没有emoji数据。</p>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Emoji 类型统计 -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <strong>Emoji 类型分布</strong>
+                            </div>
+                            <div class="card-body">
+                                <table class="table table-bordered table-striped">
+                                    <thead class="thead-light">
+                                        <tr>
+                                            <th>Emoji 类型</th>
+                                            <th>计数</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for e_type, count in emoji_stats %}
+                                        <tr>
+                                            <td>{{ e_type }}</td>
+                                            <td>{{ count }}</td>
+                                        </tr>
+                                        {% else %}
+                                        <tr>
+                                            <td colspan="2" class="text-center">暂无数据</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Flash 消息 -->
+                        {% with messages = get_flashed_messages(with_categories=true) %}
+                            {% if messages %}
+                                {% for category, message in messages %}
+                                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                                {% endfor %}
+                            {% endif %}
+                        {% endwith %}
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+</div>
+
+</body>
+</html>

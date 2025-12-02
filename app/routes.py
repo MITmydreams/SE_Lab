@@ -822,6 +822,14 @@ def export_emoji_history_csv(course_id):
     
     return response
 
+@app.route('/admin/course_info/<string:course_id>')
+def course_info(course_id):
+    # 从数据库加载课程
+    course = Course.query.get_or_404(course_id)
+    # 传给前端
+    return render_template('admin/course_info.html', course=course)
+
+
 # 管理员查看课程详细信息: 24小时emoji情绪变化曲线图
 @app.route('/admin/course_emoji_timeline/<string:course_id>', methods=['GET'])
 def course_emoji_timeline(course_id):
