@@ -85,7 +85,6 @@
                 <table class="table table-bordered table-hover">
                     <thead class="thead-light">
                         <tr>
-                            <th>学生姓名</th>
                             <th>课程名称</th>
                             <th>表情</th>
                             <th>时间</th>
@@ -94,7 +93,6 @@
                     <tbody>
                         {% for e in emojis %}
                         <tr>
-                            <td>{% if e.student %}{{ e.student.name }}{% else %}-{% endif %}</td>
                             <td>{% if e.course %}{{ e.course.name }}{% else %}-{% endif %}</td>
                             <td>
                                 <img src="{{ url_for('static', filename='emoji/' ~ e.type ~ '.png') }}"
