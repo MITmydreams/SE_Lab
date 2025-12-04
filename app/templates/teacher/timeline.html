@@ -92,6 +92,7 @@
                     </thead>
                     <tbody>
                         {% for e in emojis %}
+                        {% if 1 <= e.type <= 10 %}
                         <tr>
                             <td>{% if e.course %}{{ e.course.name }}{% else %}-{% endif %}</td>
                             <td>
@@ -101,6 +102,7 @@
                             </td>
                             <td>{{ e.time.strftime("%Y-%m-%d %H:%M:%S") }}</td>
                         </tr>
+                        {% endif %}
                         {% endfor %}
                     </tbody>
                 </table>

@@ -4,7 +4,7 @@ import uuid
 
 from app import app, db
 from app.models import User, Course, Student_Course, Emoji
-
+from config import EMOJI_TYPE_MAP
 
 # 查看学生端课程列表
 @app.route('/student/courses')
@@ -18,7 +18,7 @@ def student_courses():
                           .filter(Student_Course.student_id == student_id)\
                           .all()
 
-    return render_template('student/courses.html', courses=courses)
+    return render_template('student/courses.html', courses=courses, EMOJI_TYPE_MAP=EMOJI_TYPE_MAP)
 
 
 # 发送 Emoji 功能
@@ -72,8 +72,10 @@ def student_emoji_history():
         return redirect(url_for('welcome'))
 
     student_id = session['user_id']
-    history = Emoji.query.filter_by(student_id=student_id)\
-                         .order_by(Emoji.time.desc()).all()
+    history = Emoji.query.filter(
+        Emoji.student_id == student_id,
+        Emoji.type.between(1, 10)  # 只查询类型1-10
+    ).order_by(Emoji.time.desc()).all()
 
     return render_template('student/history.html', history=history)
 
@@ -97,7 +99,8 @@ def teacher_course_timeline(course_id):
         flash('无权限访问教师端功能', 'danger')
         return redirect(url_for('welcome'))
 
-    emojis = Emoji.query.filter_by(course_id=course_id)\
+    emojis = Emoji.query.filter(Emoji.course_id == course_id,
+                              Emoji.type.between(1, 10))\
                         .options(db.joinedload(Emoji.student))\
                         .options(db.joinedload(Emoji.course))\
                         .order_by(Emoji.time.asc()).all()
@@ -113,7 +116,10 @@ def teacher_course_stats(course_id):
     stats = db.session.query(
         Emoji.type,
         db.func.count(Emoji.type)
-    ).filter_by(course_id=course_id).group_by(Emoji.type).all()
+    ).filter(
+        Emoji.course_id == course_id,
+        Emoji.type.between(1, 10)  # 只选择1-10类型
+    ).group_by(Emoji.type).all()
 
     return render_template('teacher/stats.html', stats=stats)
 

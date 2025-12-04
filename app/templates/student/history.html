@@ -57,6 +57,7 @@
                         </thead>
                         <tbody>
                             {% for e in history %}
+                            {% if 1 <= e.type <= 10 %}
                             <tr>
                                 <td>{{ e.course_id }}</td>
                                 <td>
@@ -74,6 +75,7 @@
                                 </td>
 
                             </tr>
+                            {% endif %}
                             {% endfor %}
                         </tbody>
                     </table>

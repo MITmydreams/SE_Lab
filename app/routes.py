@@ -3,6 +3,7 @@ from flask import render_template, redirect, url_for, flash, request, session, m
 from app import app, db
 from app.forms import UserRegistrationForm, UserLoginForm, UserProfileEditForm, CourseForm, StudentCourseForm, EmojiForm
 from app.models import User, Course, Student_Course, Emoji
+from config import EMOJI_TYPE_MAP
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
 import matplotlib
@@ -14,6 +15,7 @@ import csv
 import matplotlib.font_manager as fm
 import platform
 from matplotlib.ticker import MaxNLocator
+import numpy as np
 def setup_chinese_font():
     """设置中文字体支持"""
     try:
@@ -805,18 +807,19 @@ def course_emoji_history(course_id):
     
     # 获取emoji历史数据（只包含emoji基本信息，不包含学生信息）
     emoji_history = Emoji.query.filter_by(course_id=course_id)\
-                              .with_entities(
+                            .filter(Emoji.type.between(1, 10))\
+                            .with_entities(
                                   Emoji.id,
                                   Emoji.course_id,
                                   Emoji.type,
                                   Emoji.time
-                              )\
-                              .order_by(Emoji.time.desc())\
-                              .all()
+                            )\
+                            .order_by(Emoji.time.desc())\
+                            .all()
     
     return render_template('admin/course_emoji_history.html',
                          course=course,
-                         emoji_history=emoji_history)
+                         emoji_history=emoji_history, EMOJI_TYPE_MAP=EMOJI_TYPE_MAP)
 
 # 导出课程emoji历史为CSV（不包含学生信息）
 @app.route('/admin/export_emoji_history_csv/<string:course_id>')
@@ -832,29 +835,30 @@ def export_emoji_history_csv(course_id):
     course = Course.query.get_or_404(course_id)
     
     # 获取emoji历史数据（与查看函数相同的查询逻辑）
-    emoji_history = Emoji.query.filter_by(course_id=course_id)\
-                              .with_entities(
-                                  Emoji.id,
-                                  Emoji.course_id,
-                                  Emoji.type,
-                                  Emoji.time
-                              )\
-                              .order_by(Emoji.time.desc())\
-                              .all()
+    emoji_history = Emoji.query.filter(
+        Emoji.course_id == course_id,
+        Emoji.type.between(1, 10)  # 只选择1-10类型
+    ).with_entities(
+        Emoji.id,
+        Emoji.course_id,
+        Emoji.type,
+        Emoji.time
+    ).order_by(Emoji.time.desc()).all()
     
     # 创建CSV内容
     output = io.StringIO()
     writer = csv.writer(output)
     
     # 写入CSV头部
-    writer.writerow(['Emoji ID', '课程ID', '表情类型', '发送时间'])
+    writer.writerow(['Emoji ID', '课程ID', '表情类型', '表情名字',  '发送时间'])
     
     # 写入数据行
     for emoji in emoji_history:
         writer.writerow([
             emoji.id,
             emoji.course_id,
-            f'表情 {emoji.type}',
+            f'{emoji.type}',
+            EMOJI_TYPE_MAP.get(emoji.type, '未知表情'),
             emoji.time.strftime('%Y-%m-%d %H:%M:%S')
         ])
     
@@ -864,7 +868,6 @@ def export_emoji_history_csv(course_id):
     response = make_response(output.getvalue())
     response.headers['Content-Type'] = 'text/csv; charset=utf-8'
     response.headers['Content-Disposition'] = f'attachment; filename={filename}'
-    
     return response
 
 @app.route('/admin/course_info/<string:course_id>')
@@ -873,7 +876,6 @@ def course_info(course_id):
     course = Course.query.get_or_404(course_id)
     # 传给前端
     return render_template('admin/course_info.html', course=course)
-
 
 # 管理员查看课程详细信息: 24小时emoji情绪变化曲线图
 @app.route('/admin/course_emoji_timeline/<string:course_id>', methods=['GET'])
@@ -885,26 +887,32 @@ def course_emoji_timeline(course_id):
         flash('无权限访问管理员功能', 'danger')
         return redirect(url_for('welcome'))
     
-    # 获取课程信息
     course = Course.query.get_or_404(course_id)
-    
-    # 获取教师信息
     teacher = User.query.get(course.teacher_id)
-    
-    # 获取选课学生数量
     student_count = Student_Course.query.filter_by(course_id=course_id).count()
-    
-    # 获取总emoji数量
     total_emojis = Emoji.query.filter_by(course_id=course_id).count()
-    
+
     # 生成24小时情绪变化图表
     chart_image = generate_emoji_timeline_chart(course_id)
-    
+
     # 获取emoji类型统计
     emoji_stats = db.session.query(
         Emoji.type,
         db.func.count(Emoji.type).label('count')
-    ).filter_by(course_id=course_id).group_by(Emoji.type).all()
+    ).filter_by(course_id=course_id).filter(Emoji.type.between(1, 10)).group_by(Emoji.type).all()
+
+    # 初始化字典，把所有类型数量置为 0
+    stats_dict = {t: 0 for t in range(1, 11)}
+
+    # 用查询结果更新字典
+    for t, count in emoji_stats:
+        stats_dict[t] = count
+
+    # 转回列表，用于前端模板循环
+    emoji_stats = [(t, stats_dict[t]) for t in range(1, 11)]
+
+    # 计算总数
+    total_emojis = sum(count for _, count in emoji_stats)
 
     return render_template('admin/course_emoji_timeline.html', 
                          course=course,
@@ -912,7 +920,8 @@ def course_emoji_timeline(course_id):
                          student_count=student_count,
                          total_emojis=total_emojis,
                          chart_image=chart_image,
-                         emoji_stats=emoji_stats)
+                         emoji_stats=emoji_stats,
+                         EMOJI_TYPE_MAP=EMOJI_TYPE_MAP)
 
 def generate_emoji_timeline_chart(course_id, export=False):
     """
@@ -961,22 +970,21 @@ def generate_emoji_timeline_chart(course_id, export=False):
     else:
         # 按小时和表情类型分组统计
         hour_emoji_data = {}
-        emoji_types = set()
-        
+        # 固定表情类型范围为1到10，无论是否出现都要绘制
+        emoji_types = list(range(1, 11))    
+
         for emoji in emojis:
-            # 获取小时信息
             hour = emoji.time.replace(minute=0, second=0, microsecond=0)
             emoji_type = emoji.type
             
-            emoji_types.add(emoji_type)
-            
             if hour not in hour_emoji_data:
                 hour_emoji_data[hour] = {}
+
+            if emoji_type in emoji_types:
+                if emoji_type not in hour_emoji_data[hour]:
+                    hour_emoji_data[hour][emoji_type] = 0
+                hour_emoji_data[hour][emoji_type] += 1
             
-            if emoji_type not in hour_emoji_data[hour]:
-                hour_emoji_data[hour][emoji_type] = 0
-            
-            hour_emoji_data[hour][emoji_type] += 1
         print("\n按小时分组的数据:")
         for hour, data in hour_emoji_data.items():
             print(f"{hour}: {data}")
@@ -1008,8 +1016,8 @@ def generate_emoji_timeline_chart(course_id, export=False):
         for i, (emoji_type, counts) in enumerate(complete_data.items()):
             # 使用索引获取颜色，如果表情类型过多则循环使用
             color = colors[i % len(colors)]
-            plt.plot(hours_labels, counts, marker='o', label=f'表情 {emoji_type}', 
-                     linewidth=2, color=color)
+            emoji_name = EMOJI_TYPE_MAP.get(int(emoji_type), f'表情 {emoji_type}')
+            plt.plot(hours_labels, counts, marker='o', label=emoji_name, linewidth=2, color=color)
         
         plt.title(f'课程 {course_id} - 24小时情绪变化趋势', fontsize=14, fontweight='bold')
         plt.xlabel('时间 (小时)', fontsize=12)
@@ -1051,7 +1059,7 @@ def generate_emoji_timeline_chart(course_id, export=False):
         plt.close()
         return f"data:image/png;base64,{img_data}"
     
-# 管理员查看课程详细信息: 自定义时间范围表情数量统计
+# 管理员查看课程详细信息: 自定义时间范围表情数量统计柱状图
 @app.route('/admin/course_emoji_bar/<string:course_id>', methods=['GET', 'POST'])
 def course_emoji_bar(course_id):
     if session.get('user_type') != 1:
@@ -1081,8 +1089,8 @@ def course_emoji_bar(course_id):
             
             if start_date_str and end_date_str:
                 start_time = datetime.strptime(start_date_str, '%Y-%m-%d')
-                end_time = datetime.strptime(end_date_str, '%Y-%m-%d')
-                
+                end_time = datetime.strptime(end_date_str, '%Y-%m-%d') + timedelta(days=1) - timedelta(seconds=1)  # 包含结束日期全天
+
                 # 验证时间范围
                 if start_time > end_time:
                     flash('开始时间不能晚于结束时间', 'danger')
@@ -1102,11 +1110,22 @@ def course_emoji_bar(course_id):
                 ).filter(
                     Emoji.course_id == course_id,
                     Emoji.time >= start_time,
-                    Emoji.time <= end_time
+                    Emoji.time <= end_time,
+                    Emoji.type.between(1, 10)
                 ).group_by(Emoji.type).order_by(db.func.count(Emoji.type).desc()).all()
                 
+                # 初始化字典，把所有类型数量置为 0
+                stats_dict = {t: 0 for t in range(1, 11)}
+
+                # 用查询结果更新字典
+                for t, count in emoji_stats:
+                    stats_dict[t] = count
+
+                # 转回列表，用于前端模板循环
+                emoji_stats = [(t, stats_dict[t]) for t in range(1, 11)]
+
                 # 计算总数
-                total_emojis = sum(stat.count for stat in emoji_stats)
+                total_emojis = sum(count for _, count in emoji_stats)
                 
                 flash(f'成功生成 {start_time.strftime("%Y-%m-%d")} 至 {end_time.strftime("%Y-%m-%d")} 的统计图表', 'success')
                 
@@ -1123,55 +1142,64 @@ def course_emoji_bar(course_id):
                          start_time=start_time,
                          end_time=end_time,
                          default_start=default_start.strftime('%Y-%m-%d'),
-                         default_end=default_end.strftime('%Y-%m-%d'))
+                         default_end=default_end.strftime('%Y-%m-%d'),
+                         EMOJI_TYPE_MAP=EMOJI_TYPE_MAP)
 
+# 生成课程表情数量统计柱状图（固定显示1-10类型）
 def generate_emoji_bar_chart(course_id, start_time, end_time, export=False):
-    """
-    生成课程表情数量统计柱状图
-    """
     # 查询指定时间范围内的emoji数据
-    emoji_stats = db.session.query(
+    emoji_stats_db = db.session.query(
         Emoji.type,
         db.func.count(Emoji.type).label('count')
     ).filter(
         Emoji.course_id == course_id,
         Emoji.time >= start_time,
         Emoji.time <= end_time
-    ).group_by(Emoji.type).order_by(Emoji.type).all()
+    ).group_by(Emoji.type).all()
+
+    # 固定表情类型范围
+    emoji_types_range = list(range(1, 11))  # 1 - 10
+
+    # 构造完整统计
+    complete_counts = {etype: 0 for etype in emoji_types_range}
+    for stat in emoji_stats_db:
+        if stat.type in complete_counts:
+            complete_counts[stat.type] = stat.count
+
+    # 转换为绘图数据
+    emoji_labels = [EMOJI_TYPE_MAP.get(int(etype), f'表情 {etype}') for etype in emoji_types_range]
+    counts = [complete_counts[etype] for etype in emoji_types_range]
     
-    if not emoji_stats:
-        return None  # 没有数据时返回None
+    # 如果全是 0，返回 None
+    if sum(counts) == 0:
+        return None
     
-    # 准备图表数据
-    emoji_types = [f'表情 {stat.type}' for stat in emoji_stats]
-    counts = [stat.count for stat in emoji_stats]
-    
-    # 生成柱状图
+    # 开始绘图
     plt.figure(figsize=(10, 6))
-    
-    # 创建柱状图，使用不同颜色
-    bars = plt.bar(emoji_types, counts, color=plt.cm.Set3(range(len(emoji_types))))
-    
-    # 在柱子上显示数值
+
+    bars = plt.bar(emoji_labels, counts, color=plt.cm.Set3(range(len(emoji_labels))))
+
+    # 显示柱状图文字
     for bar, count in zip(bars, counts):
-        plt.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.1, 
-                str(count), ha='center', va='bottom', fontsize=10)
-    
-    # 设置图表样式
-    plt.title(f'课程 {course_id} - 表情数量统计\n({start_time.strftime("%Y-%m-%d")} 至 {end_time.strftime("%Y-%m-%d")})', 
-              fontsize=14, fontweight='bold', pad=20)
+        plt.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.05,
+                 str(count), ha='center', va='bottom', fontsize=10)
+
+    # 图表样式
+    plt.title(
+        f'课程 {course_id} - 表情数量统计\n({start_time.strftime("%Y-%m-%d")} 至 {end_time.strftime("%Y-%m-%d")})', 
+        fontsize=14, fontweight='bold', pad=20
+    )
     plt.xlabel('表情类型', fontsize=12)
     plt.ylabel('发送数量', fontsize=12)
     plt.xticks(rotation=45, ha='right')
     plt.grid(True, alpha=0.3, axis='y')
     plt.tight_layout()
-    
-    # 将图表转换为base64编码的图片或返回文件流
+
+    # 输出图像
     img_buffer = io.BytesIO()
     if export:
-        # 导出时使用更高分辨率
         plt.savefig(img_buffer, format='png', dpi=300, bbox_inches='tight')
-        return img_buffer  # 返回文件流
+        return img_buffer
     else:
         plt.savefig(img_buffer, format='png', dpi=100, bbox_inches='tight')
         img_buffer.seek(0)
@@ -1212,7 +1240,7 @@ def course_emoji_pie(course_id):
             
             if start_date_str and end_date_str:
                 start_time = datetime.strptime(start_date_str, '%Y-%m-%d')
-                end_time = datetime.strptime(end_date_str, '%Y-%m-%d')
+                end_time = datetime.strptime(end_date_str, '%Y-%m-%d') + timedelta(days=1) - timedelta(seconds=1)  # 包含结束日期全天
                 
                 # 验证时间范围
                 if start_time > end_time:
@@ -1233,11 +1261,22 @@ def course_emoji_pie(course_id):
                 ).filter(
                     Emoji.course_id == course_id,
                     Emoji.time >= start_time,
-                    Emoji.time <= end_time
+                    Emoji.time <= end_time,
+                    Emoji.type.between(1, 10)
                 ).group_by(Emoji.type).order_by(db.func.count(Emoji.type).desc()).all()
                 
+                # 初始化字典，把所有类型数量置为 0
+                stats_dict = {t: 0 for t in range(1, 11)}
+
+                # 用查询结果更新字典
+                for t, count in emoji_stats:
+                    stats_dict[t] = count
+
+                # 转回列表，用于前端模板循环
+                emoji_stats = [(t, stats_dict[t]) for t in range(1, 11)]
+
                 # 计算总数
-                total_emojis = sum(stat.count for stat in emoji_stats)
+                total_emojis = sum(count for _, count in emoji_stats)
                 
                 flash(f'成功生成 {start_time.strftime("%Y-%m-%d")} 至 {end_time.strftime("%Y-%m-%d")} 的分布饼图', 'success')
                 
@@ -1254,93 +1293,121 @@ def course_emoji_pie(course_id):
                          start_time=start_time,
                          end_time=end_time,
                          default_start=default_start.strftime('%Y-%m-%d'),
-                         default_end=default_end.strftime('%Y-%m-%d'))
+                         default_end=default_end.strftime('%Y-%m-%d'),
+                         EMOJI_TYPE_MAP=EMOJI_TYPE_MAP)
 
+# 生成课程表情分布饼图（固定显示1-10类型）
 def generate_emoji_pie_chart(course_id, start_time, end_time, export=False):
-    """
-    生成课程表情分布饼图
-    """
-    # 查询指定时间范围内的emoji数据
-    emoji_stats = db.session.query(
+    emoji_types_list = list(range(1, 10+1))
+
+    query_stats = db.session.query(
         Emoji.type,
         db.func.count(Emoji.type).label('count')
     ).filter(
         Emoji.course_id == course_id,
         Emoji.time >= start_time,
         Emoji.time <= end_time
-    ).group_by(Emoji.type).order_by(db.func.count(Emoji.type).desc()).all()
-    
-    if not emoji_stats:
-        return None  # 没有数据时返回None
-    
-    # 准备图表数据
-    emoji_types = [f'表情 {stat.type}' for stat in emoji_stats]
-    counts = [stat.count for stat in emoji_stats]
-    total_count = sum(counts)
-    
-    # 计算百分比
-    percentages = [count / total_count * 100 for count in counts]
-    
-    # 生成饼图
+    ).group_by(Emoji.type).all()
+
+    emoji_count_map = {i: 0 for i in emoji_types_list}
+    for stat in query_stats:
+        emoji_count_map[int(stat.type)] = stat.count
+
+    paired = list(zip(emoji_types_list, [emoji_count_map[i] for i in emoji_types_list]))
+    paired_sorted = sorted(paired, key=lambda x: (x[1] == 0,))  # 把所有0排到后面
+    sorted_types = [p[0] for p in paired_sorted]
+    counts = [p[1] for p in paired_sorted]
+    names = [EMOJI_TYPE_MAP.get(t, f'表情 {t}') for t in sorted_types]
+    total = sum(counts) if sum(counts) > 0 else 1
+    # 如果全是 0，返回 None
+    if sum(counts) == 0:
+        return None
+    # 饼图不能全0，因此给极小值防崩溃
+    display_counts = [c if c > 0 else 0.01 for c in counts]
+
     plt.figure(figsize=(14, 8))
-    
-    # 设置颜色
-    colors = plt.cm.Set3(range(len(emoji_types)))
-    
-    # 创建饼图
-    wedges, texts, autotexts = plt.pie(
-        counts, 
-        labels=None,  # 不显示内置标签，使用图例和引出线
-        autopct='%1.1f%%',
+    #colors = plt.cm.Set3(range(len(names)))
+    colors = plt.cm.Paired(range(len(names)))
+
+    wedges = plt.pie(
+        display_counts,
+        labels=None,
         startangle=90,
         colors=colors,
-        shadow=True,
-        explode=[0.05] * len(emoji_types),  # 稍微分离每个扇形
-        textprops={'fontsize': 10}
+        shadow=False,
+        wedgeprops={"linewidth": 1, "edgecolor": "white"}
+    )[0]
+
+    ax = plt.gca()
+    ax.axis("equal")
+    zero_items = []  # 先收集所有 count == 0 的
+    for wedge, name, count in zip(wedges, names, counts):
+        if count == 0:
+            zero_items.append((wedge, name))
+            continue
+
+        # -------- 正常绘制 >0 的 --------
+        ang = (wedge.theta2 + wedge.theta1) / 2
+        x = np.cos(np.radians(ang))
+        y = np.sin(np.radians(ang))
+        percent = count / total * 100
+        label = f"{name}: {count} 次 ({percent:.1f}%)"
+
+        line_x = 1.05 * x
+        line_y = 1.05 * y
+        horiz_x = 1.3 if x > 0 else -1.3
+        ha = "left" if x > 0 else "right"
+
+        ax.plot([x*1.0, line_x, horiz_x], [y*1.0, line_y, line_y], color="black", linewidth=0.8)
+        ax.text(horiz_x, line_y, label, ha=ha, va="center", fontsize=13)
+
+    # -------- 合并处理所有 count = 0 --------
+    if zero_items:
+        # 取第一个 0 的 wedge 定位置
+        wedge = zero_items[0][0]
+        ang = (wedge.theta2 + wedge.theta1) / 2
+        x = np.cos(np.radians(ang))
+        y = np.sin(np.radians(ang))
+        if len(zero_items) > 1:
+            label_zero = f"其余: 0 次 (0.0%)"
+        else:
+            label_zero = f"{zero_items[0][1]}: 0 次 (0.0%)"
+        # 两段折线
+        line_x = 1.05 * x
+        line_y = 1.05 * y
+        horiz_x = 1.3 if x > 0 else -1.3
+        ha = "left" if x > 0 else "right"
+
+        ax.plot([x*1.0, line_x, horiz_x], [y*1.0, line_y, line_y], color="black", linewidth=0.8)
+        ax.text(horiz_x, line_y, label_zero, ha=ha, va="center", fontsize=13)
+
+    # -------- 图例：只写名称 + 显示所有类型 --------
+    plt.legend(
+        wedges, 
+        names,
+        title="表情类型",
+        loc="lower right",
+        bbox_to_anchor=(1, 0),
+        fontsize=13
     )
-    
-    # 设置百分比文本样式
-    for autotext in autotexts:
-        autotext.set_color('white')
-        autotext.set_fontweight('bold')
-        autotext.set_fontsize(9)
-    
-    # 添加引出线和标签
-    plt.gca().axis('equal')  # 确保饼图是圆形
-    
-    # 创建自定义标签（包含表情名称和数量）
-    legend_labels = [f'{emoji_type}\n({count}个, {percent:.1f}%)' 
-                    for emoji_type, count, percent in zip(emoji_types, counts, percentages)]
-    
-    # 添加图例（放在右侧）
-    plt.legend(wedges, legend_labels,
-              title="表情类型",
-              loc="center left",
-              bbox_to_anchor=(1, 0, 0.5, 1),
-              fontsize=10,
-              frameon=True,
-              fancybox=True,
-              shadow=True)
-    
-    # 设置标题
-    plt.title(f'课程 {course_id} - 表情分布饼图\n({start_time.strftime("%Y-%m-%d")} 至 {end_time.strftime("%Y-%m-%d")})', 
-              fontsize=14, fontweight='bold', pad=20)
-    
+
+    plt.title(
+        f'课程 {course_id} - 表情分布饼图\n({start_time.strftime("%Y-%m-%d")} 至 {end_time.strftime("%Y-%m-%d")})',
+        fontsize=14, fontweight='bold', pad=20
+    )
     plt.tight_layout()
-    
-    # 将图表转换为base64编码的图片或返回文件流
+
     img_buffer = io.BytesIO()
     if export:
-        # 导出时使用更高分辨率
         plt.savefig(img_buffer, format='png', dpi=300, bbox_inches='tight')
-        return img_buffer  # 返回文件流
+        return img_buffer
     else:
         plt.savefig(img_buffer, format='png', dpi=100, bbox_inches='tight')
         img_buffer.seek(0)
         img_data = base64.b64encode(img_buffer.getvalue()).decode()
         plt.close()
         return f"data:image/png;base64,{img_data}"
-    
+
 # 导出图表功能
 # 导出24小时情绪变化图表
 @app.route('/admin/export_emoji_timeline/<string:course_id>')
@@ -1385,7 +1452,7 @@ def export_emoji_bar(course_id):
     
     try:
         start_time = datetime.strptime(start_date_str, '%Y-%m-%d')
-        end_time = datetime.strptime(end_date_str, '%Y-%m-%d')
+        end_time = datetime.strptime(end_date_str, '%Y-%m-%d') + timedelta(days=1) - timedelta(seconds=1)  # 包含结束日期全天
         
         img_buffer = generate_emoji_bar_chart(course_id, start_time, end_time, export=True)
         # 添加检查：如果img_buffer为None，说明没有数据
@@ -1426,7 +1493,7 @@ def export_emoji_pie(course_id):
     
     try:
         start_time = datetime.strptime(start_date_str, '%Y-%m-%d')
-        end_time = datetime.strptime(end_date_str, '%Y-%m-%d')
+        end_time = datetime.strptime(end_date_str, '%Y-%m-%d') + timedelta(days=1) - timedelta(seconds=1)  # 包含结束日期全天
         
         img_buffer = generate_emoji_pie_chart(course_id, start_time, end_time, export=True)
         

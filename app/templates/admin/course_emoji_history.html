@@ -53,27 +53,30 @@
                                     <th>Emoji ID</th>
                                     <th>课程ID</th>
                                     <th>表情类型</th>
+                                    <th>表情名字</th>
                                     <th>发送时间</th>
                                 </tr>
                             </thead>
-
                             <tbody>
-                                {% for emoji in emoji_history %}
-                                <tr>
-                                    <td>{{ emoji.id }}</td>
-                                    <td>{{ emoji.course_id }}</td>
-                                    <td>
-                                        <img src="{{ url_for('static', filename='emoji/' ~ emoji.type ~ '.png') }}"
-                                            alt="emoji"
-                                            width="28" height="28">
-                                    </td>
-                                    <td>{{ emoji.time.strftime('%Y-%m-%d %H:%M:%S') }}</td>
-                                </tr>
+                                {% if emoji_history %}
+                                    {% for emoji in emoji_history %}
+                                        <tr>
+                                            <td>{{ emoji.id }}</td>
+                                            <td>{{ emoji.course_id }}</td>
+                                            <td>
+                                                <img src="{{ url_for('static', filename='emoji/' ~ emoji.type ~ '.png') }}"
+                                                    alt="emoji"
+                                                    width="28" height="28">
+                                            </td>
+                                            <td>{{ EMOJI_TYPE_MAP[emoji.type] }}</td>
+                                            <td>{{ emoji.time.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                                        </tr>
+                                    {% endfor %}
                                 {% else %}
-                                <tr>
-                                    <td colspan="4" class="text-center text-muted">暂无 Emoji 历史记录</td>
-                                </tr>
-                                {% endfor %}
+                                    <tr>
+                                        <td colspan="5" class="text-center text-muted">暂无 Emoji 历史记录</td>
+                                    </tr>
+                                {% endif %}
                             </tbody>
                         </table>
 

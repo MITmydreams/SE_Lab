@@ -94,21 +94,23 @@
                                 <table class="table table-bordered table-striped">
                                     <thead class="thead-light">
                                         <tr>
-                                            <th>Emoji 类型</th>
+                                            <th>Emoji 名字</th>
                                             <th>数量</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {% for e_type, count in emoji_stats %}
-                                        <tr>
-                                            <td>{{ e_type }}</td>
-                                            <td>{{ count }}</td>
-                                        </tr>
+                                        {% if total_emojis > 0 %}
+                                            {% for e_type, count in emoji_stats %}
+                                                <tr>
+                                                    <td>{{ EMOJI_TYPE_MAP.get(e_type, e_type) }}</td>
+                                                    <td>{{ count }}</td>
+                                                </tr>
+                                            {% endfor %}
                                         {% else %}
-                                        <tr>
-                                            <td colspan="2" class="text-center">暂无数据</td>
-                                        </tr>
-                                        {% endfor %}
+                                            <tr>
+                                                <td colspan="2" class="text-center">暂无数据</td>
+                                            </tr>
+                                        {% endif %}
                                     </tbody>
                                 </table>
                             </div>

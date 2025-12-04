@@ -82,10 +82,10 @@
                                             <!-- 选择框 -->
                                             <select name="emoji_type" id="emoji_select_{{ course.id }}"
                                                     class="form-control"
-                                                    style="width:120px; display:inline-block;"
+                                                    style="width:180px; display:inline-block;"
                                                     onchange="updatePreview('{{ course.id }}')">
-                                                {% for i in range(1, 26) %}
-                                                    <option value="{{ i }}">{{ i }}</option>
+                                                {% for key, value in EMOJI_TYPE_MAP.items() %}
+                                                    <option value="{{ key }}">{{ value }}</option>
                                                 {% endfor %}
                                             </select>
 
@@ -94,8 +94,8 @@
                                                 src="{{ url_for('static', filename='emoji/1.png') }}"
                                                 width="32" height="32"
                                                 style="margin-left:10px;">
+                                                <button type="submit" class="btn btn-primary btn-sm" style="margin-left:30px;">发送</button>
                                         </div>
-                                        <button type="submit" class="btn btn-primary btn-sm">发送</button>
                                     </form>
                                 </td>
                             </tr>
