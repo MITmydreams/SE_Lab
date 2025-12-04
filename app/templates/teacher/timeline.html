@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>课堂表情记录</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.staticfile.net/twitter-bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        /* 简洁 Bootstrap 风格时间线 */
+        .timeline {
+            list-style: none;
+            padding-left: 0;
+            position: relative;
+        }
+
+        .timeline:before {
+            content: '';
+            position: absolute;
+            left: 20px;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: #dee2e6;
+        }
+
+        .timeline-item {
+            position: relative;
+            padding-left: 50px;
+            margin-bottom: 30px;
+        }
+
+        .timeline-item:before {
+            content: '';
+            position: absolute;
+            left: 13px;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #007bff;
+            top: 4px;
+        }
+
+        .timeline-time {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+
+        .timeline-content {
+            background: #f8f9fa;
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid #e1e4e7;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container mt-4">
+
+        <div class="row mb-3">
+            <div class="col-sm-6">
+                <h3>课堂表情记录</h3>
+            </div>
+            <div class="col-sm-6 text-right">
+                <a href="{{ url_for('teacher_courses') }}" class="btn btn-secondary">
+                    返回课程
+                </a>
+            </div>
+        </div>
+
+        {% if emojis|length == 0 %}
+            <div class="alert alert-info">
+                暂无表情记录
+            </div>
+        {% else %}
+
+
+            <div class="history-container">
+                <table class="table table-bordered table-hover">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>学生姓名</th>
+                            <th>课程名称</th>
+                            <th>表情</th>
+                            <th>时间</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for e in emojis %}
+                        <tr>
+                            <td>{% if e.student %}{{ e.student.name }}{% else %}-{% endif %}</td>
+                            <td>{% if e.course %}{{ e.course.name }}{% else %}-{% endif %}</td>
+                            <td>
+                                <img src="{{ url_for('static', filename='emoji/' ~ e.type ~ '.png') }}"
+                                    alt="emoji"
+                                    width="28" height="28">
+                            </td>
+                            <td>{{ e.time.strftime("%Y-%m-%d %H:%M:%S") }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+
+        {% endif %}
+
+    </div>
+
+</body>
+</html>

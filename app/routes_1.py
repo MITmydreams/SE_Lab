@@ -14,7 +14,9 @@ def student_courses():
         return redirect(url_for('welcome'))
 
     student_id = session['user_id']
-    courses = Student_Course.query.filter_by(student_id=student_id).all()
+    courses = Course.query.join(Student_Course)\
+                          .filter(Student_Course.student_id == student_id)\
+                          .all()
 
     return render_template('student/courses.html', courses=courses)
 
@@ -41,7 +43,7 @@ def send_emoji(course_id):
     db.session.commit()
 
     flash('Emoji 发送成功！', 'success')
-    return redirect(url_for('student_course_detail', course_id=course_id))
+    return redirect(url_for('student_courses'))
 
 # 撤回 Emoji 功能
 @app.route('/student/emoji/<emoji_id>/delete')
@@ -60,7 +62,7 @@ def delete_emoji(emoji_id):
     db.session.commit()
 
     flash('Emoji 已删除', 'success')
-    return redirect(url_for('welcome'))
+    return redirect(url_for('student_emoji_history'))
 
 # 查看学生端 Emoji 历史记录
 @app.route('/student/emoji/history')
@@ -96,6 +98,8 @@ def teacher_course_timeline(course_id):
         return redirect(url_for('welcome'))
 
     emojis = Emoji.query.filter_by(course_id=course_id)\
+                        .options(db.joinedload(Emoji.student))\
+                        .options(db.joinedload(Emoji.course))\
                         .order_by(Emoji.time.asc()).all()
 
     return render_template('teacher/timeline.html', emojis=emojis)

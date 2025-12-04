@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>课堂表情统计</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.staticfile.net/twitter-bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        .stats-container {
+            margin-top: 20px;
+        }
+        .right-top-btn {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container mt-4">
+
+        <div class="row mb-3">
+            <div class="col-sm-6">
+                <h3>课堂表情统计</h3>
+            </div>
+            <div class="col-sm-6 text-right">
+                <a href="{{ url_for('teacher_courses') }}" class="btn btn-secondary">
+                    返回课程
+                </a>
+            </div>
+        </div>
+
+        {% if stats|length == 0 %}
+            <div class="alert alert-info">
+                暂无表情记录
+            </div>
+        {% else %}
+
+            <div class="stats-container">
+                <table class="table table-bordered table-hover">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>表情</th>
+                            <th>发送数量</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for type, count in stats %}
+                        <tr>
+                            <td>
+                                <img src="{{ url_for('static', filename='emoji/' ~ type ~ '.png') }}"
+                                     alt="emoji"
+                                     width="28" height="28">
+                            </td>
+                            <td>{{ count }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+        {% endif %}
+
+    </div>
+
+</body>
+</html>
