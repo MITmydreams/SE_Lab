@@ -445,6 +445,8 @@ img_data = base64.b64encode(buffer.getvalue()).decode()
 
 ## 10. 部分 Debug 记录
 
+具体见项目debug.md文件。
+
 ## 11. 项目分工
 
 | 成员   | 负责内容                                   |
